@@ -110,6 +110,16 @@
     .save-btn:disabled { opacity: .5; cursor: not-allowed; }
     .cancel-btn { padding: 11px 20px; font-size: 14px; color: #888; background: #f0ede8; border: none; border-radius: 10px; cursor: pointer; }
     .save-msg { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 8px; display: none; text-align: center; }
+    .user-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+    .user-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #4a3fa8; flex-shrink: 0; }
+    .user-info-block { flex: 1; }
+    .user-username { font-size: 15px; font-weight: 600; }
+    .user-meta { font-size: 12px; color: #888; }
+    .username-edit-row { display: flex; gap: 8px; align-items: center; }
+    .username-edit-row input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+    .username-edit-row input:focus { outline: none; border-color: #1a1a1a; }
+    .username-edit-row button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #d4d0f0; background: #f0eef9; color: #4a3fa8; cursor: pointer; white-space: nowrap; }
     .save-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
     .save-msg.error { background: #fdecea; color: #a0342e; display: block; }
   </style>
@@ -141,8 +151,9 @@
       <button class="tab active" onclick="switchTab('pending')">審査待ち</button>
       <button class="tab" onclick="switchTab('approved')">承認済み</button>
       <button class="tab" onclick="switchTab('rejected')">却下</button>
+      <button class="tab" onclick="switchTab('users')">ユーザー管理</button>
     </div>
-    <button class="refresh-btn" onclick="loadShops()">↻ 再読み込み</button>
+    <button class="refresh-btn" onclick="currentTab==='users' ? loadUsers() : loadShops()">↻ 再読み込み</button>
     <div id="shop-list"><div class="loading">読み込み中...</div></div>
   </main>
 </div>
@@ -157,6 +168,7 @@
     <div class="form-group">
       <label>現在の画像</label>
       <div id="edit-img-current"></div>
+      <button type="button" onclick="clearImage()" style="font-size:12px;color:#a0342e;background:#fdecea;border:1px solid #f5c6c2;padding:5px 12px;border-radius:8px;cursor:pointer;margin-bottom:8px;">🗑 画像をデフォルトに戻す（著作権対応）</button>
       <div class="img-upload-small">
         <input type="file" id="edit-image" accept="image/*" onchange="previewEditImage(this)">
         📷 画像を変更する（クリックまたはドラッグ）
@@ -246,11 +258,82 @@
 
   function switchTab(tab) {
     currentTab = tab;
-    document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', ['pending','approved','rejected'][i] === tab));
-    renderList();
+    document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', ['pending','approved','rejected','users'][i] === tab));
+    if (tab === 'users') loadUsers();
+    else renderList();
+  }
+
+  async function loadUsers() {
+    document.getElementById('shop-list').innerHTML = '<div class="loading">読み込み中...</div>';
+    const { data, error } = await client.from('profiles').select('*').order('approved_count', { ascending: false });
+    if (error || !data) { document.getElementById('shop-list').innerHTML = '<div class="empty">読み込みに失敗しました</div>'; return; }
+    if (!data.length) { document.getElementById('shop-list').innerHTML = '<div class="empty">ユーザーがいません</div>'; return; }
+    document.getElementById('shop-list').innerHTML = data.map(u => `
+      <div class="shop-card" style="padding:1rem 1.25rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div>
+            <div style="font-size:15px;font-weight:600;" id="uname-${u.id}">${u.username}</div>
+            <div style="font-size:12px;color:#888;margin-top:2px;">承認数：${u.approved_count}件</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="new-uname-${u.id}" placeholder="新しいユーザー名" style="padding:6px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;font-family:inherit;">
+            <button class="btn btn-edit" onclick="adminChangeUsername('${u.id}')">変更</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:6px;">※不適切なユーザー名は管理者が変更できます</div>
+      </div>`).join('');
+  }
+
+  async function adminChangeUsername(userId) {
+    const input = document.getElementById('new-uname-' + userId);
+    const newName = input.value.trim();
+    if (!newName) { alert('新しいユーザー名を入力してください'); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { alert('英数字とアンダーバーのみ使えます'); return; }
+    const { data: existing } = await client.from('profiles').select('id').eq('username', newName).neq('id', userId).single();
+    if (existing) { alert('このユーザー名はすでに使われています'); return; }
+    const { error } = await client.from('profiles').update({ username: newName }).eq('id', userId);
+    if (error) { alert('変更に失敗しました'); return; }
+    document.getElementById('uname-' + userId).textContent = newName;
+    input.value = '';
+    alert('ユーザー名を変更しました');
+  }
+
+  async function renderUserList() {
+    const listEl = document.getElementById('shop-list');
+    listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+    const { data, error } = await client.from('profiles').select('*').order('approved_count', { ascending: false });
+    if (error || !data) { listEl.innerHTML = '<div class="empty">読み込みに失敗しました</div>'; return; }
+    if (!data.length) { listEl.innerHTML = '<div class="empty">ユーザーがいません</div>'; return; }
+    listEl.innerHTML = data.map(u => `
+      <div class="user-card">
+        <div class="user-card-top">
+          <div class="user-avatar">${u.username.charAt(0).toUpperCase()}</div>
+          <div class="user-info-block">
+            <div class="user-username" id="uname-${u.id}">${u.username}</div>
+            <div class="user-meta">承認数：${u.approved_count}件</div>
+          </div>
+        </div>
+        <div class="username-edit-row">
+          <input type="text" id="newinput-${u.id}" placeholder="新しいユーザー名">
+          <button onclick="adminChangeUsername('${u.id}')">ユーザー名を変更</button>
+        </div>
+      </div>`).join('');
+  }
+
+  async function adminChangeUsername(userId) {
+    const input = document.getElementById('newinput-' + userId);
+    const newName = input.value.trim();
+    if (!newName) { alert('ユーザー名を入力してください'); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { alert('英数字とアンダーバーのみ使えます'); return; }
+    const { error } = await client.from('profiles').update({ username: newName }).eq('id', userId);
+    if (error) { alert('変更に失敗しました'); return; }
+    document.getElementById('uname-' + userId).textContent = newName;
+    input.value = '';
+    alert('ユーザー名を変更しました');
   }
 
   function renderList() {
+    if (currentTab === 'users') { renderUserList(); return; }
     const filtered = allShops.filter(s => s.status === currentTab);
     const listEl = document.getElementById('shop-list');
     if (!filtered.length) { const labels = {pending:'審査待ちのお店はありません',approved:'承認済みのお店はありません',rejected:'却下したお店はありません'}; listEl.innerHTML = `<div class="empty">${labels[currentTab]}</div>`; return; }
@@ -301,6 +384,13 @@
     document.getElementById('modal-bg').classList.add('open');
   }
 
+  function clearImage() {
+    document.getElementById('edit-current-image').value = '';
+    document.getElementById('edit-img-current').innerHTML = '<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#aaa;background:#f8f7f4;border-radius:10px;">デフォルト画像（ジャンルアイコン）に設定されます</div>';
+    document.getElementById('edit-img-new-preview').style.display = 'none';
+    document.getElementById('edit-image').value = '';
+  }
+
   function previewEditImage(input) {
     const file = input.files[0];
     if (!file) return;
@@ -348,6 +438,17 @@
     if (shop) Object.assign(shop, { name, genre, area, price, vibe, description: desc, map_url: map, image_url });
     showSaveMsg('保存しました！', 'success');
     setTimeout(() => { closeModal(); renderList(); }, 1000);
+  }
+
+  function clearImage() {
+    if (!confirm('画像をデフォルト（ジャンルアイコン）に差し替えますか？')) return;
+    document.getElementById('edit-current-image').value = '';
+    document.getElementById('edit-image').value = '';
+    document.getElementById('edit-img-new-preview').style.display = 'none';
+    const shopId = document.getElementById('edit-id').value;
+    const shop = allShops.find(s => s.id === shopId);
+    const emoji = shop ? (({'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣'})[shop.genre] || '🍽️') : '🍽️';
+    document.getElementById('edit-img-current').innerHTML = '<div class="img-current-placeholder">' + emoji + '</div>';
   }
 
   function showSaveMsg(msg, type) { const el = document.getElementById('save-msg'); el.textContent = msg; el.className = 'save-msg ' + type; }
