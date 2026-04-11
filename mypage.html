@@ -234,7 +234,7 @@
   }
 
   async function loadRanking() {
-    const { data } = await client.from('profiles').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
+    const { data } = await client.from('profiles_with_count').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
     const el = document.getElementById('ranking-list');
     if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
     const medals = ['🥇','🥈','🥉'];
@@ -318,7 +318,7 @@
   }
 
   async function loadRanking() {
-    const { data } = await client.from('profiles').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
+    const { data } = await client.from('profiles_with_count').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
     const el = document.getElementById('ranking-list');
     if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
     const medals = ['🥇','🥈','🥉'];
