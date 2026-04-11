@@ -51,10 +51,11 @@
     .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
     .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
     .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
-    .ad-wrap { text-align: center; margin-bottom: 1.25rem; }
+    .ad-wrap { text-align: center; margin-bottom: 1.25rem; width: 100%; }
     .ad-pc { display: block; }
     .ad-sp { display: none; }
     @media (max-width: 640px) { .ad-pc { display: none; } .ad-sp { display: block; } }
+    .ad-sp iframe, .ad-sp ins, .ad-sp > * { position: static !important; top: auto !important; bottom: auto !important; left: auto !important; right: auto !important; width: 100% !important; max-width: 320px !important; margin: 0 auto !important; display: block !important; }
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
     .modal-bg.open { display: flex; }
     .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px; }
