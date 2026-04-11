@@ -187,19 +187,28 @@
   async function toggleLike(e, shopId) {
     e.stopPropagation();
     if (!currentUser) { openModal(); return; }
+    const shop = allShops.find(s => s.id === shopId);
     if (myLikes.has(shopId)) {
       await client.from('likes').delete().eq('shop_id', shopId).eq('user_id', currentUser.id);
       myLikes.delete(shopId);
+      if (shop) shop.likeCount = Math.max(0, (shop.likeCount || 0) - 1);
     } else {
       await client.from('likes').insert({ shop_id: shopId, user_id: currentUser.id });
       myLikes.add(shopId);
+      if (shop) shop.likeCount = (shop.likeCount || 0) + 1;
     }
     renderCards();
   }
   async function loadShops() {
-    const { data, error } = await client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false });
-    if (error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
-    allShops = data || []; renderCards();
+    const [shopsRes, likesRes] = await Promise.all([
+      client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false }),
+      client.from('likes').select('shop_id')
+    ]);
+    if (shopsRes.error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
+    const likeCounts = {};
+    (likesRes.data || []).forEach(l => { likeCounts[l.shop_id] = (likeCounts[l.shop_id] || 0) + 1; });
+    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0 }));
+    renderCards();
   }
   function renderCards() {
     const genre = document.getElementById('genre').value;
@@ -223,7 +232,7 @@
         ? `<img class="card-img" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">`
         : `<div class="card-img-placeholder">${emoji}</div>`;
       const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
-      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div><div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} いいね</button></div></div></div>`;
+      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div><div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${s.likeCount > 0 ? s.likeCount : 'いいね'}</button></div></div></div>`;
     }).join('');
   }
   function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
