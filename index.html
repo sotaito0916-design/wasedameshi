@@ -127,10 +127,20 @@
       <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
       <span class="budget-label" id="budget-label">〜¥3,000</span>
     </div>
-    <div class="budget-wrap">
-      <label>閉店時間</label>
-      <input type="time" id="close-filter" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;">
-      <button onclick="clearCloseFilter()" style="font-size:11px;color:#aaa;background:none;border:none;cursor:pointer;white-space:nowrap;">クリア</button>
+    <div class="budget-wrap" style="align-items:center;gap:6px;">
+      <label>営業時間</label>
+      <select id="close-filter-select" onchange="onSelectChange(this)" style="font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
+        <option value="">時間帯を選ぶ</option>
+        <option value="22:00">22時以降も営業</option>
+        <option value="23:00">23時以降も営業</option>
+        <option value="00:00">深夜0時以降も営業</option>
+        <option value="01:00">深夜1時以降も営業</option>
+        <option value="custom">手動入力</option>
+      </select>
+      <span id="close-filter-custom-wrap" style="display:none;align-items:center;gap:4px;">
+        <input type="time" id="close-filter-custom" style="font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;width:110px;" oninput="renderCards()">
+        <span id="close-filter-label" style="font-size:13px;color:#666;white-space:nowrap;">以降も営業</span>
+      </span>
     </div>
   </div>
 </div>
@@ -304,13 +314,34 @@
     const genre = document.getElementById('genre').value;
     const vibe = document.getElementById('vibe').value;
     const budget = parseInt(document.getElementById('budget').value);
-    const closeFilter = document.getElementById('close-filter').value;
+    const selectVal = document.getElementById('close-filter-select').value;
+    const closeFilter = selectVal === 'custom'
+      ? document.getElementById('close-filter-custom').value
+      : selectVal;
+
+    const toMin = t => {
+      if (!t) return null;
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
+    const isOpenUntil = (closeTime, filterTime) => {
+      if (!closeTime) return true;
+      const c = toMin(closeTime);
+      const f = toMin(filterTime);
+      const midnight = 24 * 60;
+      // 閉店が深夜帯（0:00〜5:59）の場合は+24時間として扱う
+      const cAdj = c < 360 ? c + midnight : c;
+      // 検索時刻が深夜帯の場合も+24時間
+      const fAdj = f < 360 ? f + midnight : f;
+      return cAdj >= fAdj;
+    };
+
     const filtered = allShops.filter(s => {
       if (currentArea && s.area !== currentArea) return false;
       if (genre && s.genre !== genre) return false;
       if (vibe && !(s.vibe || []).includes(vibe)) return false;
       if (s.price > budget) return false;
-      if (closeFilter && s.close_time && s.close_time < closeFilter) return false;
+      if (closeFilter && !isOpenUntil(s.close_time, closeFilter)) return false;
       return true;
     });
     document.getElementById('results-count').innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
@@ -333,8 +364,14 @@
     }).join('');
   }
 
+  function onSelectChange(sel) {
+    const wrap = document.getElementById('close-filter-custom-wrap');
+    const isCustom = sel.value === 'custom';
+    wrap.style.display = isCustom ? 'flex' : 'none';
+    if (!isCustom) renderCards();
+  }
+
   function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
-  function clearCloseFilter() { document.getElementById('close-filter').value = ''; renderCards(); }
   function openMenuModal(e, url) { e.stopPropagation(); document.getElementById('menu-modal-img').src = url; document.getElementById('menu-modal-bg').classList.add('open'); }
   function closeMenuModal() { document.getElementById('menu-modal-bg').classList.remove('open'); }
   document.querySelectorAll('.area-tab').forEach(btn => {
@@ -344,7 +381,8 @@
     });
   });
   document.getElementById('genre').addEventListener('change', renderCards);
-  document.getElementById('close-filter').addEventListener('change', renderCards);
+  document.getElementById('close-filter-select').addEventListener('change', renderCards);
+  document.getElementById('close-filter-custom').addEventListener('change', renderCards);
   document.getElementById('vibe').addEventListener('change', renderCards);
   document.getElementById('budget').addEventListener('input', e => {
     document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`; renderCards();
