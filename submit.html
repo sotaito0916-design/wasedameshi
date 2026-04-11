@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>お店を登録 — ワセメシ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
+
+    header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
+    .logo span { color: #e85d24; }
+    .header-link { font-size: 13px; color: #666; text-decoration: none; }
+
+    .container { max-width: 560px; margin: 2rem auto; padding: 0 1rem 4rem; }
+    h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 2rem; line-height: 1.6; }
+
+    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 16px; padding: 1.5rem; }
+
+    .form-group { margin-bottom: 18px; }
+    .form-group label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .required { color: #e85d24; margin-left: 2px; }
+    input[type=text], input[type=number], input[type=url], select, textarea {
+      width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px;
+      background: #fff; color: #1a1a1a; transition: border-color .15s; font-family: inherit;
+    }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: #1a1a1a; }
+    textarea { height: 90px; resize: vertical; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .vibe-options { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+    .vibe-label { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; padding: 6px 12px; border: 1px solid #ddd; border-radius: 999px; transition: all .15s; user-select: none; }
+    .vibe-label:has(input:checked) { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .vibe-label input { position: absolute; opacity: 0; pointer-events: none; }
+
+    .hint { font-size: 12px; color: #aaa; margin-top: 5px; }
+
+    .submit-btn { width: 100%; padding: 13px; font-size: 15px; font-weight: 700; background: #1a1a1a; color: #fff; border: none; border-radius: 12px; cursor: pointer; margin-top: 6px; transition: opacity .15s; }
+    .submit-btn:hover { opacity: .85; }
+    .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    .notice { background: #f0eef9; border: 1px solid #d4d0f0; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #4a3fa8; margin-bottom: 1.5rem; line-height: 1.6; }
+
+    .success { display: none; text-align: center; padding: 3rem 2rem; }
+    .success-icon { font-size: 48px; margin-bottom: 1rem; }
+    .success h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .success p { font-size: 14px; color: #888; line-height: 1.7; }
+    .back-link { display: inline-block; margin-top: 1.5rem; font-size: 14px; color: #1a1a1a; text-decoration: none; font-weight: 600; }
+
+    .error-msg { background: #fdecea; border: 1px solid #f5c6c2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #c0392b; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">ワセ<span>メシ</span></a>
+  <a class="header-link" href="index.html">← 検索に戻る</a>
+</header>
+
+<div class="container">
+  <h1>お店を登録する</h1>
+  <p class="subtitle">早稲田周辺のお気に入りのお店を教えてください。<br>管理者の確認後に掲載されます（通常1〜2日）。</p>
+
+  <div class="notice">
+    📝 投稿いただいた情報は管理者が内容を確認した上で公開されます。スパムや無関係な情報は掲載されません。
+  </div>
+
+  <div class="card" id="form-wrap">
+    <div class="form-group">
+      <label>店名<span class="required">*</span></label>
+      <input type="text" id="f-name" placeholder="例：早稲田軒">
+    </div>
+
+    <div class="row2">
+      <div class="form-group">
+        <label>ジャンル<span class="required">*</span></label>
+        <select id="f-genre">
+          <option value="">選択してください</option>
+          <option>ラーメン</option>
+          <option>定食・ごはん</option>
+          <option>カフェ</option>
+          <option>居酒屋・バー</option>
+          <option>カレー</option>
+          <option>寿司・和食</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>エリア<span class="required">*</span></label>
+        <select id="f-area">
+          <option value="">選択してください</option>
+          <option>早稲田キャンパス周辺</option>
+          <option>高田馬場駅周辺</option>
+          <option>戸山公園周辺</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>予算の目安（円）<span class="required">*</span></label>
+      <input type="number" id="f-price" placeholder="例：800" min="100" max="10000">
+      <p class="hint">一人あたりのおおよその金額を入力してください</p>
+    </div>
+
+    <div class="form-group">
+      <label>雰囲気（複数選択可）</label>
+      <div class="vibe-options">
+        <label class="vibe-label"><input type="checkbox" value="一人OK"> 一人でも入りやすい</label>
+        <label class="vibe-label"><input type="checkbox" value="グループ"> グループ向け</label>
+        <label class="vibe-label"><input type="checkbox" value="デート"> デートにおすすめ</label>
+        <label class="vibe-label"><input type="checkbox" value="勉強"> 勉強・作業できる</label>
+        <label class="vibe-label"><input type="checkbox" value="深夜"> 深夜営業あり</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>おすすめポイント</label>
+      <textarea id="f-desc" placeholder="例：ランチの日替わり定食が500円でコスパ最高！席数も多くグループでも入りやすいです。"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>GoogleマップのURL（任意）</label>
+      <input type="url" id="f-map" placeholder="https://maps.google.com/...">
+      <p class="hint">Googleマップでお店を検索し、URLをコピーして貼り付けてください</p>
+    </div>
+
+    <div class="error-msg" id="error-msg"></div>
+    <button class="submit-btn" id="submit-btn" onclick="submitShop()">投稿する</button>
+  </div>
+
+  <div class="success" id="success-wrap">
+    <div class="success-icon">🎉</div>
+    <h2>投稿ありがとうございます！</h2>
+    <p>管理者が内容を確認した後、掲載されます。<br>通常1〜2日以内に反映されます。</p>
+    <a class="back-link" href="index.html">← 検索画面に戻る</a>
+  </div>
+</div>
+
+<script>
+  // ===== ここを書き換えてください =====
+  const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
+  // ====================================
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  async function submitShop() {
+    const name = document.getElementById('f-name').value.trim();
+    const genre = document.getElementById('f-genre').value;
+    const area = document.getElementById('f-area').value;
+    const price = parseInt(document.getElementById('f-price').value);
+    const desc = document.getElementById('f-desc').value.trim();
+    const map = document.getElementById('f-map').value.trim();
+    const vibe = [...document.querySelectorAll('.vibe-label input:checked')].map(c => c.value);
+
+    const errEl = document.getElementById('error-msg');
+    errEl.style.display = 'none';
+
+    if (!name) { showError('店名を入力してください'); return; }
+    if (!genre) { showError('ジャンルを選んでください'); return; }
+    if (!area) { showError('エリアを選んでください'); return; }
+    if (!price || price < 100) { showError('予算を正しく入力してください'); return; }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+
+    const { error } = await client.from('shops').insert({
+      name, genre, area, price,
+      vibe,
+      description: desc,
+      map_url: map,
+      status: 'pending'
+    });
+
+    if (error) {
+      showError('送信に失敗しました。しばらくしてもう一度お試しください。');
+      btn.disabled = false;
+      btn.textContent = '投稿する';
+      return;
+    }
+
+    document.getElementById('form-wrap').style.display = 'none';
+    document.getElementById('success-wrap').style.display = 'block';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+</script>
+</body>
+</html>

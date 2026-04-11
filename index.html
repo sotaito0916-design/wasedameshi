@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ワセメシ — 早稲田周辺グルメ検索</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
+
+    /* Header */
+    header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 10; }
+    .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
+    .logo span { color: #e85d24; }
+    .header-link { font-size: 13px; color: #666; text-decoration: none; background: #f0ede8; padding: 6px 14px; border-radius: 999px; }
+    .header-link:hover { background: #e8e5e0; }
+
+    /* Filters */
+    .filters-wrap { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 1rem 1.5rem; }
+    .area-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .area-tab { font-size: 12px; padding: 5px 14px; border-radius: 999px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #666; transition: all .15s; }
+    .area-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .filter-row select { font-size: 13px; padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+    .budget-wrap { display: flex; align-items: center; gap: 8px; }
+    .budget-wrap label { font-size: 12px; color: #666; white-space: nowrap; }
+    .budget-wrap input[type=range] { width: 120px; cursor: pointer; }
+    .budget-label { font-size: 13px; font-weight: 600; min-width: 60px; }
+
+    /* Main */
+    main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem; }
+    .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
+    .results-count strong { color: #1a1a1a; }
+
+    /* Cards */
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.1rem 1.25rem; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .15s, transform .1s; text-decoration: none; color: inherit; }
+    .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .card-icon { font-size: 30px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: #f8f7f4; border-radius: 12px; flex-shrink: 0; }
+    .card-body { flex: 1; min-width: 0; }
+    .card-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+    .card-name { font-size: 15px; font-weight: 600; }
+    .card-price { font-size: 13px; color: #888; }
+    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+    .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
+    .tag-genre { background: #f0eef9; color: #4a3fa8; }
+    .tag-vibe { background: #e4f5ee; color: #1a6e4a; }
+    .card-desc { font-size: 13px; color: #666; line-height: 1.55; }
+    .card-area { font-size: 11px; color: #aaa; margin-top: 6px; }
+
+    /* States */
+    .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
+    .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
+    .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
+
+    /* Genre emoji map */
+
+    @media (max-width: 480px) {
+      .filter-row { gap: 6px; }
+      .budget-wrap input[type=range] { width: 90px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="index.html">ワセ<span>メシ</span></a>
+  <a class="header-link" href="submit.html">＋ お店を登録</a>
+</header>
+
+<div class="filters-wrap">
+  <div class="area-tabs">
+    <button class="area-tab active" data-area="">全エリア</button>
+    <button class="area-tab" data-area="早稲田キャンパス周辺">早稲田キャンパス周辺</button>
+    <button class="area-tab" data-area="高田馬場駅周辺">高田馬場駅周辺</button>
+    <button class="area-tab" data-area="戸山公園周辺">戸山公園周辺</button>
+  </div>
+  <div class="filter-row">
+    <select id="genre">
+      <option value="">ジャンルを選ぶ</option>
+      <option>ラーメン</option>
+      <option>定食・ごはん</option>
+      <option>カフェ</option>
+      <option>居酒屋・バー</option>
+      <option>カレー</option>
+      <option>寿司・和食</option>
+    </select>
+    <select id="vibe">
+      <option value="">雰囲気を選ぶ</option>
+      <option value="一人OK">一人でも入りやすい</option>
+      <option value="グループ">グループ向け</option>
+      <option value="デート">デートにおすすめ</option>
+      <option value="勉強">勉強・作業できる</option>
+      <option value="深夜">深夜営業あり</option>
+    </select>
+    <div class="budget-wrap">
+      <label>予算上限</label>
+      <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
+      <span class="budget-label" id="budget-label">〜¥3,000</span>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="results-count" id="results-count"></div>
+  <div class="cards" id="cards"><div class="loading">読み込み中...</div></div>
+</main>
+
+<script>
+  // ===== ここを書き換えてください =====
+  const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
+  // ====================================
+
+  const GENRE_EMOJI = { 'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣' };
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let allShops = [];
+  let currentArea = '';
+
+  async function loadShops() {
+    const { data, error } = await client
+      .from('shops')
+      .select('*')
+      .eq('status', 'approved')
+      .order('submitted_at', { ascending: false });
+
+    if (error) {
+      document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。URLとAPIキーを確認してください。</div>';
+      return;
+    }
+    allShops = data || [];
+    renderCards();
+  }
+
+  function renderCards() {
+    const genre = document.getElementById('genre').value;
+    const vibe = document.getElementById('vibe').value;
+    const budget = parseInt(document.getElementById('budget').value);
+
+    const filtered = allShops.filter(s => {
+      if (currentArea && s.area !== currentArea) return false;
+      if (genre && s.genre !== genre) return false;
+      if (vibe && !(s.vibe || []).includes(vibe)) return false;
+      if (s.price > budget) return false;
+      return true;
+    });
+
+    const countEl = document.getElementById('results-count');
+    countEl.innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
+
+    const cardsEl = document.getElementById('cards');
+    if (!filtered.length) {
+      cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>';
+      return;
+    }
+
+    cardsEl.innerHTML = filtered.map(s => {
+      const emoji = GENRE_EMOJI[s.genre] || '🍽️';
+      const vibes = (s.vibe || []).map(v => `<span class="tag tag-vibe">${v}</span>`).join('');
+      const mapLink = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
+      return `
+        <div class="card" ${mapLink} title="${s.map_url ? 'Googleマップで開く' : ''}">
+          <div class="card-icon">${emoji}</div>
+          <div class="card-body">
+            <div class="card-top">
+              <span class="card-name">${s.name}</span>
+              <span class="card-price">〜¥${s.price.toLocaleString()}</span>
+            </div>
+            <div class="tags">
+              <span class="tag tag-genre">${s.genre}</span>
+              ${vibes}
+            </div>
+            <div class="card-desc">${s.description || ''}</div>
+            <div class="card-area">📍 ${s.area}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function openMap(e, url) {
+    e.preventDefault();
+    window.open(url, '_blank');
+  }
+
+  // Area tabs
+  document.querySelectorAll('.area-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.area-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentArea = btn.dataset.area;
+      renderCards();
+    });
+  });
+
+  // Filters
+  document.getElementById('genre').addEventListener('change', renderCards);
+  document.getElementById('vibe').addEventListener('change', renderCards);
+  document.getElementById('budget').addEventListener('input', e => {
+    document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`;
+    renderCards();
+  });
+
+  loadShops();
+</script>
+</body>
+</html>
