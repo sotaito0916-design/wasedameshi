@@ -288,7 +288,6 @@
     const input = document.getElementById('new-uname-' + userId);
     const newName = input.value.trim();
     if (!newName) { alert('新しいユーザー名を入力してください'); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { alert('英数字とアンダーバーのみ使えます'); return; }
     const { data: existing } = await client.from('profiles').select('id').eq('username', newName).neq('id', userId).single();
     if (existing) { alert('このユーザー名はすでに使われています'); return; }
     const { error } = await client.from('profiles').update({ username: newName }).eq('id', userId);
