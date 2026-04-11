@@ -149,8 +149,6 @@
     </div>
 
     <div class="tab-content" id="tab-signup">
-      <label>ユーザー名</label>
-      <input type="text" id="signup-username" placeholder="例：waseda_taro（英数字・アンダーバー）">
       <label>メールアドレス</label>
       <input type="email" id="signup-email" placeholder="example@email.com">
       <label>パスワード</label>
@@ -213,18 +211,15 @@
   }
 
   async function handleSignup() {
-    const username = document.getElementById('signup-username').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const pw = document.getElementById('signup-pw').value;
-    if (!username) { showModalMsg('ユーザー名を入力してください', 'error'); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) { showModalMsg('ユーザー名は英数字とアンダーバーのみ使えます', 'error'); return; }
     if (!email || !pw) { showModalMsg('メールとパスワードを入力してください', 'error'); return; }
     if (pw.length < 6) { showModalMsg('パスワードは6文字以上にしてください', 'error'); return; }
-    const { data: existing } = await client.from('profiles').select('id').eq('username', username).single();
-    if (existing) { showModalMsg('このユーザー名はすでに使われています', 'error'); return; }
     const { data, error } = await client.auth.signUp({ email, password: pw });
     if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
     if (data.user) {
+      const { count: total } = await client.from('profiles').select('*', { count: 'exact', head: true });
+      const username = 'ワセメシ' + ((total || 0) + 1);
       await client.from('profiles').insert({ id: data.user.id, username });
     }
     showModalMsg('確認メールを送信しました。メールのリンクをクリックしてください。', 'success');
