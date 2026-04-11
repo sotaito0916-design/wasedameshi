@@ -196,7 +196,8 @@
       document.getElementById('progress').style.display = 'none';
     }
 
-    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, status: 'pending' });
+    const { data: { user } } = await client.auth.getUser();
+    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, status: 'pending', user_id: user?.id || null });
     if (error) {
       showError('送信に失敗しました。しばらくしてもう一度お試しください。');
       btn.disabled = false; btn.textContent = '投稿する'; return;
