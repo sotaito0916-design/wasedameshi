@@ -214,6 +214,17 @@
       <textarea id="edit-desc"></textarea>
     </div>
     <div class="form-group">
+      <label>メニュー表の画像</label>
+      <div id="edit-menu-current"></div>
+      <div class="img-upload-small" style="margin-top:8px;">
+        <input type="file" id="edit-menu-image" accept="image/*" onchange="previewEditMenu(this)">
+        📋 メニュー表を変更する（クリックまたはドラッグ）
+        <img id="edit-menu-preview" class="img-new-preview" alt="メニュープレビュー">
+      </div>
+      <button type="button" onclick="clearMenuImage()" style="margin-top:8px;font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #f5c6c2;background:#fdecea;color:#a0342e;cursor:pointer;">🗑️ メニュー画像を削除</button>
+    </div>
+
+    <div class="form-group">
       <label>GoogleマップURL</label>
       <input type="url" id="edit-map">
     </div>
@@ -340,6 +351,12 @@
     document.getElementById('edit-map').value = s.map_url || '';
     document.getElementById('edit-img-new-preview').style.display = 'none';
     document.getElementById('edit-image').value = '';
+    document.getElementById('edit-menu-preview').style.display = 'none';
+    document.getElementById('edit-menu-image').value = '';
+    const menuCurrent = document.getElementById('edit-menu-current');
+    menuCurrent.innerHTML = s.menu_image_url
+      ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
+      : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
     const imgCurrent = document.getElementById('edit-img-current');
     imgCurrent.innerHTML = s.image_url
       ? `<img class="img-current" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=img-current-placeholder>${emoji}</div>'">`
@@ -354,6 +371,12 @@
     document.getElementById('edit-img-current').innerHTML = '<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#aaa;background:#f8f7f4;border-radius:10px;">デフォルト画像（ジャンルアイコン）に設定されます</div>';
     document.getElementById('edit-img-new-preview').style.display = 'none';
     document.getElementById('edit-image').value = '';
+    document.getElementById('edit-menu-preview').style.display = 'none';
+    document.getElementById('edit-menu-image').value = '';
+    const menuCurrent = document.getElementById('edit-menu-current');
+    menuCurrent.innerHTML = s.menu_image_url
+      ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
+      : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
   }
 
   function previewEditImage(input) {
@@ -396,7 +419,19 @@
       }
     }
 
-    const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url }).eq('id', id);
+    let menu_image_url = document.getElementById('edit-menu-current').querySelector('img') ? document.getElementById('edit-menu-current').querySelector('img').src : null;
+    const menuFile = document.getElementById('edit-menu-image').files[0];
+    if (menuFile) {
+      const menuExt = menuFile.name.split('.').pop();
+      const menuFileName = `menu_${Date.now()}.${menuExt}`;
+      const { data: menuUpload, error: menuError } = await client.storage.from('shop-images').upload(menuFileName, menuFile, { cacheControl: '3600', upsert: false });
+      if (!menuError) {
+        const { data: menuUrlData } = client.storage.from('shop-images').getPublicUrl(menuFileName);
+        menu_image_url = menuUrlData.publicUrl;
+      }
+    }
+
+    const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url }).eq('id', id);
     btn.disabled = false; btn.textContent = '保存する';
     if (error) { showSaveMsg('保存に失敗しました', 'error'); return; }
     const shop = allShops.find(s => s.id === id);
@@ -414,6 +449,24 @@
     const shop = allShops.find(s => s.id === shopId);
     const emoji = shop ? (({'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣'})[shop.genre] || '🍽️') : '🍽️';
     document.getElementById('edit-img-current').innerHTML = '<div class="img-current-placeholder">' + emoji + '</div>';
+  }
+
+  function previewEditMenu(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const prev = document.getElementById('edit-menu-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearMenuImage() {
+    if (!confirm('メニュー画像を削除しますか？')) return;
+    document.getElementById('edit-menu-image').value = '';
+    document.getElementById('edit-menu-preview').style.display = 'none';
+    document.getElementById('edit-menu-current').innerHTML = '<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>';
   }
 
   function showSaveMsg(msg, type) { const el = document.getElementById('save-msg'); el.textContent = msg; el.className = 'save-msg ' + type; }
