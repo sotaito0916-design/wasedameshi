@@ -265,7 +265,7 @@
 
   async function loadUsers() {
     document.getElementById('shop-list').innerHTML = '<div class="loading">読み込み中...</div>';
-    const { data, error } = await client.from('profiles').select('*').order('approved_count', { ascending: false });
+    const { data, error } = await client.from('profiles_with_count').select('*').order('approved_count', { ascending: false });
     if (error || !data) { document.getElementById('shop-list').innerHTML = '<div class="empty">読み込みに失敗しました</div>'; return; }
     if (!data.length) { document.getElementById('shop-list').innerHTML = '<div class="empty">ユーザーがいません</div>'; return; }
     document.getElementById('shop-list').innerHTML = data.map(u => `
@@ -301,7 +301,7 @@
   async function renderUserList() {
     const listEl = document.getElementById('shop-list');
     listEl.innerHTML = '<div class="loading">読み込み中...</div>';
-    const { data, error } = await client.from('profiles').select('*').order('approved_count', { ascending: false });
+    const { data, error } = await client.from('profiles_with_count').select('*').order('approved_count', { ascending: false });
     if (error || !data) { listEl.innerHTML = '<div class="empty">読み込みに失敗しました</div>'; return; }
     if (!data.length) { listEl.innerHTML = '<div class="empty">ユーザーがいません</div>'; return; }
     listEl.innerHTML = data.map(u => `
