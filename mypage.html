@@ -12,24 +12,35 @@
     .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
     .logo span { color: #e85d24; }
     .header-link { font-size: 13px; color: #666; text-decoration: none; }
-
     .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
-
-    /* ログイン促進 */
     .login-prompt { text-align: center; padding: 4rem 2rem; }
     .login-prompt h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
     .login-prompt p { font-size: 14px; color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
     .login-prompt-btn { font-size: 14px; font-weight: 700; background: #1a1a1a; color: #fff; border: none; padding: 12px 32px; border-radius: 12px; cursor: pointer; }
-
-    /* プロフィール */
-    .profile-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .profile-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: flex-start; gap: 1rem; }
     .avatar { width: 56px; height: 56px; border-radius: 50%; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #4a3fa8; flex-shrink: 0; }
-    .profile-info { flex: 1; }
+    .profile-info { flex: 1; min-width: 0; }
     .profile-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
-    .profile-email { font-size: 13px; color: #888; }
-    .logout-btn { font-size: 13px; color: #888; background: none; border: 1px solid #ddd; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
-
-    /* 統計 */
+    .profile-email { font-size: 13px; color: #888; margin-bottom: 10px; }
+    .username-edit { display: flex; gap: 8px; align-items: center; }
+    .username-edit input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; min-width: 0; }
+    .username-edit input:focus { outline: none; border-color: #1a1a1a; }
+    .username-edit button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f0ede8; color: #1a1a1a; cursor: pointer; white-space: nowrap; }
+    .username-msg { font-size: 12px; margin-top: 4px; }
+    .username-msg.success { color: #1a7a4a; }
+    .username-msg.error { color: #a0342e; }
+    .notice-small { font-size: 11px; color: #aaa; margin-top: 4px; }
+    .logout-btn { font-size: 13px; color: #888; background: none; border: 1px solid #ddd; padding: 6px 14px; border-radius: 999px; cursor: pointer; flex-shrink: 0; }
+    .ranking-section { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .ranking-title { font-size: 15px; font-weight: 700; margin-bottom: 1rem; }
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .ranking-item { display: flex; align-items: center; gap: 10px; }
+    .rank-num { font-size: 16px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; }
+    .rank-1 { color: #e8a020; }
+    .rank-2 { color: #888; }
+    .rank-3 { color: #a06030; }
+    .rank-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .rank-count { font-size: 13px; color: #888; white-space: nowrap; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
     .stat { background: #fff; border: 1px solid #e8e6e0; border-radius: 12px; padding: 1rem; text-align: center; }
     .stat-num { font-size: 24px; font-weight: 700; }
@@ -37,8 +48,6 @@
     .stat-num.pending { color: #e85d24; }
     .stat-num.rejected { color: #888; }
     .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
-
-    /* 投稿履歴 */
     .section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
     .shop-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
     .shop-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
@@ -53,13 +62,10 @@
     .shop-date { font-size: 11px; color: #aaa; margin-top: 6px; }
     .empty { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
     .loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
-
-    /* モーダル */
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
     .modal-bg.open { display: flex; }
     .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px; }
-    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .modal p { font-size: 13px; color: #888; margin-bottom: 1.25rem; }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 1rem; }
     .modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
     .modal input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 12px; font-family: inherit; }
     .modal input:focus { outline: none; border-color: #1a1a1a; }
@@ -73,37 +79,6 @@
     .modal-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
     .modal-msg.error { background: #fdecea; color: #a0342e; display: block; }
     .modal-close { width: 100%; padding: 8px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
-    .ranking-section { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
-    .ranking-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .ranking-title { font-size: 15px; font-weight: 700; }
-    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
-    .ranking-item { display: flex; align-items: center; gap: 10px; }
-    .rank-num { font-size: 16px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; }
-    .rank-1 { color: #e8a020; } .rank-2 { color: #888; } .rank-3 { color: #a06030; }
-    .rank-name { font-size: 14px; font-weight: 500; flex: 1; }
-    .rank-count { font-size: 13px; color: #888; white-space: nowrap; }
-    .username-edit { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
-    .username-edit input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
-    .username-edit input:focus { outline: none; border-color: #1a1a1a; }
-    .username-edit button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f0ede8; color: #1a1a1a; cursor: pointer; white-space: nowrap; }
-    .username-edit button:hover { background: #e8e5e0; }
-    .edit-msg { font-size: 12px; margin-top: 4px; }
-    .edit-msg.success { color: #1a7a4a; } .edit-msg.error { color: #a0342e; }
-    .notice-small { font-size: 11px; color: #aaa; margin-top: 4px; }
-    .ranking-section { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
-    .ranking-title { font-size: 15px; font-weight: 700; margin-bottom: 1rem; }
-    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
-    .ranking-item { display: flex; align-items: center; gap: 10px; }
-    .rank-num { font-size: 16px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; }
-    .rank-1 { color: #e8a020; } .rank-2 { color: #888; } .rank-3 { color: #a06030; }
-    .rank-name { font-size: 14px; font-weight: 500; flex: 1; }
-    .rank-count { font-size: 13px; color: #888; white-space: nowrap; }
-    .username-edit { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-    .username-edit input { flex: 1; padding: 6px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
-    .username-edit input:focus { outline: none; border-color: #1a1a1a; }
-    .username-save-btn { font-size: 12px; padding: 6px 12px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; }
-    .username-msg { font-size: 12px; margin-top: 4px; }
-    .username-msg.success { color: #1a7a4a; } .username-msg.error { color: #a0342e; }
   </style>
 </head>
 <body>
@@ -113,38 +88,30 @@
 </header>
 
 <div class="container">
-  <!-- 未ログイン -->
   <div class="login-prompt" id="login-prompt" style="display:none;">
     <h2>ログインが必要です</h2>
     <p>マイページを見るにはログインしてください。</p>
     <button class="login-prompt-btn" onclick="openModal()">ログイン / 新規登録</button>
   </div>
 
-  <!-- ログイン済み -->
   <div id="mypage-content" style="display:none;">
     <div class="profile-card">
       <div class="avatar" id="avatar"></div>
-      <div class="profile-info" style="flex:1;">
+      <div class="profile-info">
         <div class="profile-name" id="profile-name"></div>
         <div class="profile-email" id="profile-email"></div>
         <div class="username-edit">
           <input type="text" id="username-input" placeholder="新しいユーザー名">
-          <button class="username-save-btn" onclick="saveUsername()">変更</button>
+          <button onclick="saveUsername()">変更</button>
         </div>
         <div class="username-msg" id="username-msg"></div>
+        <div class="notice-small">※ 不適切なユーザー名は管理者により変更される場合があります</div>
       </div>
       <button class="logout-btn" onclick="handleLogout()">ログアウト</button>
     </div>
 
     <div class="ranking-section">
       <div class="ranking-title">🏆 投稿ランキング</div>
-      <div class="ranking-list" id="ranking-list"><div style="font-size:13px;color:#aaa;">読み込み中...</div></div>
-    </div>
-
-    <div class="ranking-section">
-      <div class="ranking-header">
-        <div class="ranking-title">🏆 投稿ランキング</div>
-      </div>
       <div class="ranking-list" id="ranking-list"><div style="font-size:13px;color:#aaa;">読み込み中...</div></div>
     </div>
 
@@ -159,7 +126,6 @@
   </div>
 </div>
 
-<!-- ログインモーダル -->
 <div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <h2>ログイン / 新規登録</h2>
@@ -196,7 +162,7 @@
     const { data: { session } } = await client.auth.getSession();
     currentUser = session?.user || null;
     if (currentUser) {
-      showMypage();
+      await showMypage();
     } else {
       document.getElementById('login-prompt').style.display = 'block';
     }
@@ -218,7 +184,6 @@
     const newName = document.getElementById('username-input').value.trim();
     const msgEl = document.getElementById('username-msg');
     if (!newName) { msgEl.textContent = 'ユーザー名を入力してください'; msgEl.className = 'username-msg error'; return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { msgEl.textContent = '英数字とアンダーバーのみ使えます'; msgEl.className = 'username-msg error'; return; }
     const { data: existing } = await client.from('profiles').select('id').eq('username', newName).neq('id', currentUser.id).single();
     if (existing) { msgEl.textContent = 'このユーザー名はすでに使われています'; msgEl.className = 'username-msg error'; return; }
     const { error } = await client.from('profiles').update({ username: newName }).eq('id', currentUser.id);
@@ -245,15 +210,13 @@
   }
 
   async function loadMyShops() {
-    const { data, error } = await client.from('shops').select('*').eq('user_id', currentUser.id).order('submitted_at', { ascending: false });
+    const { data } = await client.from('shops').select('*').eq('user_id', currentUser.id).order('submitted_at', { ascending: false });
     const shops = data || [];
     document.getElementById('s-approved').textContent = shops.filter(s => s.status === 'approved').length;
     document.getElementById('s-pending').textContent = shops.filter(s => s.status === 'pending').length;
     document.getElementById('s-rejected').textContent = shops.filter(s => s.status === 'rejected').length;
-
     const listEl = document.getElementById('shop-list');
     if (!shops.length) { listEl.innerHTML = '<div class="empty">まだお店を投稿していません</div>'; return; }
-
     listEl.innerHTML = shops.map(s => {
       const date = new Date(s.submitted_at).toLocaleDateString('ja-JP', {year:'numeric',month:'long',day:'numeric'});
       const badgeClass = {pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected'}[s.status];
@@ -297,7 +260,7 @@
     if (error) { showModalMsg('ログインに失敗しました', 'error'); return; }
     currentUser = data.user;
     closeModal();
-    showMypage();
+    await showMypage();
   }
 
   async function handleSignup() {
@@ -308,55 +271,11 @@
     const { data, error } = await client.auth.signUp({ email, password: pw });
     if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
     if (data.user) {
-      const { data: countData } = await client.from('profiles').select('id', { count: 'exact', head: true });
-      const count = countData ? countData.length : 0;
       const { count: total } = await client.from('profiles').select('*', { count: 'exact', head: true });
       const username = 'ワセメシ' + ((total || 0) + 1);
       await client.from('profiles').insert({ id: data.user.id, username });
     }
     showModalMsg('確認メールを送信しました。メールのリンクをクリックしてください。', 'success');
-  }
-
-  async function loadRanking() {
-    const { data } = await client.from('profiles_with_count').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
-    const el = document.getElementById('ranking-list');
-    if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
-    const medals = ['🥇','🥈','🥉'];
-    el.innerHTML = data.map((p, i) => `
-      <div class="ranking-item">
-        <span class="rank-num rank-${i+1}">${medals[i] || (i+1)}</span>
-        <span class="rank-name">${p.username}</span>
-        <span class="rank-count">${p.approved_count}件承認</span>
-      </div>`).join('');
-  }
-
-  async function updateUsername() {
-    const newName = document.getElementById('new-username').value.trim();
-    const msgEl = document.getElementById('edit-msg');
-    if (!newName) { msgEl.textContent = 'ユーザー名を入力してください'; msgEl.className = 'edit-msg error'; return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { msgEl.textContent = '英数字とアンダーバーのみ使えます'; msgEl.className = 'edit-msg error'; return; }
-    const { data: existing } = await client.from('profiles').select('id').eq('username', newName).single();
-    if (existing) { msgEl.textContent = 'このユーザー名はすでに使われています'; msgEl.className = 'edit-msg error'; return; }
-    const { error } = await client.from('profiles').update({ username: newName }).eq('id', currentUser.id);
-    if (error) { msgEl.textContent = '変更に失敗しました'; msgEl.className = 'edit-msg error'; return; }
-    document.getElementById('profile-name').textContent = newName;
-    document.getElementById('avatar').textContent = newName.charAt(0).toUpperCase();
-    document.getElementById('new-username').value = '';
-    msgEl.textContent = 'ユーザー名を変更しました！'; msgEl.className = 'edit-msg success';
-    setTimeout(() => { msgEl.textContent = ''; }, 3000);
-    loadRanking();
-  }
-
-  async function showMypage() {
-    document.getElementById('mypage-content').style.display = 'block';
-    document.getElementById('login-prompt').style.display = 'none';
-    const { data: profile } = await client.from('profiles').select('*').eq('id', currentUser.id).single();
-    if (profile) {
-      document.getElementById('avatar').textContent = profile.username.charAt(0).toUpperCase();
-      document.getElementById('profile-name').textContent = profile.username;
-    }
-    document.getElementById('profile-email').textContent = currentUser.email;
-    await Promise.all([loadMyShops(), loadRanking()]);
   }
 
   init();
