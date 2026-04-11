@@ -138,6 +138,16 @@
     </div>
 
     <div class="form-group">
+      <label>営業時間（任意）</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="time" id="f-open" style="flex:1;">
+        <span style="font-size:14px;color:#888;">〜</span>
+        <input type="time" id="f-close" style="flex:1;">
+      </div>
+      <p class="hint">わからない場合は空欄のままで大丈夫です。未入力の場合は「営業時間情報なし」と表示されます。</p>
+    </div>
+
+    <div class="form-group">
       <label>GoogleマップのURL（任意）</label>
       <input type="url" id="f-map" placeholder="https://maps.google.com/...">
     </div>
@@ -206,6 +216,8 @@
     const price = parseInt(document.getElementById('f-price').value);
     const desc = document.getElementById('f-desc').value.trim();
     const map = document.getElementById('f-map').value.trim();
+    const open_time = document.getElementById('f-open').value || null;
+    const close_time = document.getElementById('f-close').value || null;
     const vibe = [...document.querySelectorAll('.vibe-label input:checked')].map(c => c.value);
     const imageFile = document.getElementById('f-image').files[0];
 
@@ -250,7 +262,7 @@
       }
     }
 
-    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, status: 'pending', user_id: user?.id || null });
+    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, status: 'pending', user_id: user?.id || null });
     if (error) {
       showError('送信に失敗しました。しばらくしてもう一度お試しください。');
       btn.disabled = false; btn.textContent = '投稿する'; return;
