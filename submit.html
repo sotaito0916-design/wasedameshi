@@ -124,6 +124,20 @@
       <textarea id="f-desc" placeholder="例：ランチの日替わり定食が500円でコスパ最高！席数も多くグループでも入りやすいです。"></textarea>
     </div>
     <div class="form-group">
+      <label>メニュー表の写真（任意）</label>
+      <div class="img-upload" id="menu-upload">
+        <input type="file" id="f-menu" accept="image/*" onchange="previewMenu(this)">
+        <div id="menu-placeholder">
+          <div class="img-upload-icon">📋</div>
+          <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>してメニュー表をアップロード<br>JPG・PNG・WebP（最大5MB）</div>
+        </div>
+        <img id="menu-preview" class="img-preview" alt="メニュープレビュー">
+      </div>
+      <div class="img-remove" id="menu-remove" onclick="removeMenu()">✕ メニュー画像を削除</div>
+      <p class="hint">メニュー表の写真を撮影してアップロードしてください。未投稿の場合は「メニュー情報なし」と表示されます。</p>
+    </div>
+
+    <div class="form-group">
       <label>GoogleマップのURL（任意）</label>
       <input type="url" id="f-map" placeholder="https://maps.google.com/...">
     </div>
@@ -142,6 +156,27 @@
   const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  function previewMenu(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { showError('画像は5MB以下にしてください'); input.value = ''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      document.getElementById('menu-preview').src = e.target.result;
+      document.getElementById('menu-preview').style.display = 'block';
+      document.getElementById('menu-placeholder').style.display = 'none';
+      document.getElementById('menu-remove').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeMenu() {
+    document.getElementById('f-menu').value = '';
+    document.getElementById('menu-preview').style.display = 'none';
+    document.getElementById('menu-placeholder').style.display = 'block';
+    document.getElementById('menu-remove').style.display = 'none';
+  }
 
   function previewImage(input) {
     const file = input.files[0];
@@ -202,7 +237,20 @@
     }
 
     const { data: { user } } = await client.auth.getUser();
-    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, status: 'pending', user_id: user?.id || null });
+    let menu_image_url = null;
+    const menuFile = document.getElementById('f-menu').files[0];
+    if (menuFile) {
+      const menuExt = menuFile.name.split('.').pop();
+      const menuFileName = `menu_${Date.now()}.${menuExt}`;
+      const { data: menuUpload, error: menuError } = await client.storage
+        .from('shop-images').upload(menuFileName, menuFile, { cacheControl: '3600', upsert: false });
+      if (!menuError) {
+        const { data: menuUrlData } = client.storage.from('shop-images').getPublicUrl(menuFileName);
+        menu_image_url = menuUrlData.publicUrl;
+      }
+    }
+
+    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, status: 'pending', user_id: user?.id || null });
     if (error) {
       showError('送信に失敗しました。しばらくしてもう一度お試しください。');
       btn.disabled = false; btn.textContent = '投稿する'; return;
