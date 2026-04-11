@@ -73,6 +73,37 @@
     .modal-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
     .modal-msg.error { background: #fdecea; color: #a0342e; display: block; }
     .modal-close { width: 100%; padding: 8px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
+    .ranking-section { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .ranking-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .ranking-title { font-size: 15px; font-weight: 700; }
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .ranking-item { display: flex; align-items: center; gap: 10px; }
+    .rank-num { font-size: 16px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; }
+    .rank-1 { color: #e8a020; } .rank-2 { color: #888; } .rank-3 { color: #a06030; }
+    .rank-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .rank-count { font-size: 13px; color: #888; white-space: nowrap; }
+    .username-edit { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+    .username-edit input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+    .username-edit input:focus { outline: none; border-color: #1a1a1a; }
+    .username-edit button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #ddd; background: #f0ede8; color: #1a1a1a; cursor: pointer; white-space: nowrap; }
+    .username-edit button:hover { background: #e8e5e0; }
+    .edit-msg { font-size: 12px; margin-top: 4px; }
+    .edit-msg.success { color: #1a7a4a; } .edit-msg.error { color: #a0342e; }
+    .notice-small { font-size: 11px; color: #aaa; margin-top: 4px; }
+    .ranking-section { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.25rem; margin-bottom: 1.25rem; }
+    .ranking-title { font-size: 15px; font-weight: 700; margin-bottom: 1rem; }
+    .ranking-list { display: flex; flex-direction: column; gap: 8px; }
+    .ranking-item { display: flex; align-items: center; gap: 10px; }
+    .rank-num { font-size: 16px; font-weight: 700; width: 28px; text-align: center; flex-shrink: 0; }
+    .rank-1 { color: #e8a020; } .rank-2 { color: #888; } .rank-3 { color: #a06030; }
+    .rank-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .rank-count { font-size: 13px; color: #888; white-space: nowrap; }
+    .username-edit { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+    .username-edit input { flex: 1; padding: 6px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
+    .username-edit input:focus { outline: none; border-color: #1a1a1a; }
+    .username-save-btn { font-size: 12px; padding: 6px 12px; background: #1a1a1a; color: #fff; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+    .username-msg { font-size: 12px; margin-top: 4px; }
+    .username-msg.success { color: #1a7a4a; } .username-msg.error { color: #a0342e; }
   </style>
 </head>
 <body>
@@ -93,11 +124,28 @@
   <div id="mypage-content" style="display:none;">
     <div class="profile-card">
       <div class="avatar" id="avatar"></div>
-      <div class="profile-info">
+      <div class="profile-info" style="flex:1;">
         <div class="profile-name" id="profile-name"></div>
         <div class="profile-email" id="profile-email"></div>
+        <div class="username-edit">
+          <input type="text" id="username-input" placeholder="新しいユーザー名">
+          <button class="username-save-btn" onclick="saveUsername()">変更</button>
+        </div>
+        <div class="username-msg" id="username-msg"></div>
       </div>
       <button class="logout-btn" onclick="handleLogout()">ログアウト</button>
+    </div>
+
+    <div class="ranking-section">
+      <div class="ranking-title">🏆 投稿ランキング</div>
+      <div class="ranking-list" id="ranking-list"><div style="font-size:13px;color:#aaa;">読み込み中...</div></div>
+    </div>
+
+    <div class="ranking-section">
+      <div class="ranking-header">
+        <div class="ranking-title">🏆 投稿ランキング</div>
+      </div>
+      <div class="ranking-list" id="ranking-list"><div style="font-size:13px;color:#aaa;">読み込み中...</div></div>
     </div>
 
     <div class="stats">
@@ -165,7 +213,37 @@
       document.getElementById('profile-name').textContent = profile.username;
     }
     document.getElementById('profile-email').textContent = currentUser.email;
-    await loadMyShops();
+    await Promise.all([loadMyShops(), loadRanking()]);
+  }
+
+  async function saveUsername() {
+    const newName = document.getElementById('username-input').value.trim();
+    const msgEl = document.getElementById('username-msg');
+    if (!newName) { msgEl.textContent = 'ユーザー名を入力してください'; msgEl.className = 'username-msg error'; return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { msgEl.textContent = '英数字とアンダーバーのみ使えます'; msgEl.className = 'username-msg error'; return; }
+    const { data: existing } = await client.from('profiles').select('id').eq('username', newName).neq('id', currentUser.id).single();
+    if (existing) { msgEl.textContent = 'このユーザー名はすでに使われています'; msgEl.className = 'username-msg error'; return; }
+    const { error } = await client.from('profiles').update({ username: newName }).eq('id', currentUser.id);
+    if (error) { msgEl.textContent = '変更に失敗しました'; msgEl.className = 'username-msg error'; return; }
+    document.getElementById('profile-name').textContent = newName;
+    document.getElementById('avatar').textContent = newName.charAt(0).toUpperCase();
+    document.getElementById('username-input').value = '';
+    msgEl.textContent = 'ユーザー名を変更しました！'; msgEl.className = 'username-msg success';
+    setTimeout(() => msgEl.textContent = '', 3000);
+    loadRanking();
+  }
+
+  async function loadRanking() {
+    const { data } = await client.from('profiles').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
+    const el = document.getElementById('ranking-list');
+    if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = data.map((p, i) => `
+      <div class="ranking-item">
+        <span class="rank-num rank-${i+1}">${medals[i] || (i+1)}</span>
+        <span class="rank-name">${p.username}</span>
+        <span class="rank-count">${p.approved_count}件承認</span>
+      </div>`).join('');
   }
 
   async function loadMyShops() {
@@ -237,6 +315,48 @@
     if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
     if (data.user) await client.from('profiles').insert({ id: data.user.id, username });
     showModalMsg('確認メールを送信しました', 'success');
+  }
+
+  async function loadRanking() {
+    const { data } = await client.from('profiles').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
+    const el = document.getElementById('ranking-list');
+    if (!data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
+    const medals = ['🥇','🥈','🥉'];
+    el.innerHTML = data.map((p, i) => `
+      <div class="ranking-item">
+        <span class="rank-num rank-${i+1}">${medals[i] || (i+1)}</span>
+        <span class="rank-name">${p.username}</span>
+        <span class="rank-count">${p.approved_count}件承認</span>
+      </div>`).join('');
+  }
+
+  async function updateUsername() {
+    const newName = document.getElementById('new-username').value.trim();
+    const msgEl = document.getElementById('edit-msg');
+    if (!newName) { msgEl.textContent = 'ユーザー名を入力してください'; msgEl.className = 'edit-msg error'; return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(newName)) { msgEl.textContent = '英数字とアンダーバーのみ使えます'; msgEl.className = 'edit-msg error'; return; }
+    const { data: existing } = await client.from('profiles').select('id').eq('username', newName).single();
+    if (existing) { msgEl.textContent = 'このユーザー名はすでに使われています'; msgEl.className = 'edit-msg error'; return; }
+    const { error } = await client.from('profiles').update({ username: newName }).eq('id', currentUser.id);
+    if (error) { msgEl.textContent = '変更に失敗しました'; msgEl.className = 'edit-msg error'; return; }
+    document.getElementById('profile-name').textContent = newName;
+    document.getElementById('avatar').textContent = newName.charAt(0).toUpperCase();
+    document.getElementById('new-username').value = '';
+    msgEl.textContent = 'ユーザー名を変更しました！'; msgEl.className = 'edit-msg success';
+    setTimeout(() => { msgEl.textContent = ''; }, 3000);
+    loadRanking();
+  }
+
+  async function showMypage() {
+    document.getElementById('mypage-content').style.display = 'block';
+    document.getElementById('login-prompt').style.display = 'none';
+    const { data: profile } = await client.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (profile) {
+      document.getElementById('avatar').textContent = profile.username.charAt(0).toUpperCase();
+      document.getElementById('profile-name').textContent = profile.username;
+    }
+    document.getElementById('profile-email').textContent = currentUser.email;
+    await Promise.all([loadMyShops(), loadRanking()]);
   }
 
   init();
