@@ -51,6 +51,10 @@
     .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
     .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
     .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
+    .ad-wrap { text-align: center; margin-bottom: 1.25rem; }
+    .ad-pc { display: block; }
+    .ad-sp { display: none; }
+    @media (max-width: 640px) { .ad-pc { display: none; } .ad-sp { display: block; } }
     .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
     .modal-bg.open { display: flex; }
     .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px; }
@@ -104,6 +108,14 @@
   </div>
 </div>
 <main>
+  <div class="ad-wrap">
+    <div class="ad-pc"><!-- admax -->
+<script src="https://adm.shinobi.jp/s/33fe831a4dc534859f863d12500ee178"></script>
+<!-- admax --></div>
+    <div class="ad-sp"><!-- admax -->
+<script src="https://adm.shinobi.jp/s/b2c66610a48f54d468abba3a1b17a066"></script>
+<!-- admax --></div>
+  </div>
   <div class="results-count" id="results-count"></div>
   <div class="cards" id="cards"><div class="loading">読み込み中...</div></div>
 </main>
