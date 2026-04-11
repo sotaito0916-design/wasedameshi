@@ -225,6 +225,15 @@
     </div>
 
     <div class="form-group">
+      <label>営業時間</label>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="time" id="edit-open" style="flex:1;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;">
+        <span style="font-size:13px;color:#888;">〜</span>
+        <input type="time" id="edit-close" style="flex:1;padding:8px 10px;font-size:13px;border:1px solid #ddd;border-radius:8px;">
+      </div>
+    </div>
+
+    <div class="form-group">
       <label>GoogleマップURL</label>
       <input type="url" id="edit-map">
     </div>
@@ -349,6 +358,8 @@
     document.getElementById('edit-price').value = s.price;
     document.getElementById('edit-desc').value = s.description || '';
     document.getElementById('edit-map').value = s.map_url || '';
+    document.getElementById('edit-open').value = s.open_time || '';
+    document.getElementById('edit-close').value = s.close_time || '';
     document.getElementById('edit-img-new-preview').style.display = 'none';
     document.getElementById('edit-image').value = '';
     document.getElementById('edit-menu-preview').style.display = 'none';
@@ -400,6 +411,8 @@
     const price = parseInt(document.getElementById('edit-price').value);
     const desc = document.getElementById('edit-desc').value.trim();
     const map = document.getElementById('edit-map').value.trim();
+    const open_time = document.getElementById('edit-open').value || null;
+    const close_time = document.getElementById('edit-close').value || null;
     const vibe = [...document.querySelectorAll('#modal-bg .vibe-label input:checked')].map(c => c.value);
     const imageFile = document.getElementById('edit-image').files[0];
     if (!name || !price) { showSaveMsg('店名と予算は必須です', 'error'); return; }
@@ -431,7 +444,7 @@
       }
     }
 
-    const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url }).eq('id', id);
+    const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time }).eq('id', id);
     btn.disabled = false; btn.textContent = '保存する';
     if (error) { showSaveMsg('保存に失敗しました', 'error'); return; }
     const shop = allShops.find(s => s.id === id);
