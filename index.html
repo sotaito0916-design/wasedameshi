@@ -8,15 +8,15 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
-
-    /* Header */
     header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 10; }
     .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
     .logo span { color: #e85d24; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
     .header-link { font-size: 13px; color: #666; text-decoration: none; background: #f0ede8; padding: 6px 14px; border-radius: 999px; }
     .header-link:hover { background: #e8e5e0; }
-
-    /* Filters */
+    .login-btn { font-size: 13px; color: #1a1a1a; background: none; border: 1px solid #ddd; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+    .user-info { font-size: 12px; color: #888; display: flex; align-items: center; gap: 8px; }
+    .logout-link { font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; }
     .filters-wrap { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 1rem 1.5rem; }
     .area-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
     .area-tab { font-size: 12px; padding: 5px 14px; border-radius: 999px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #666; transition: all .15s; }
@@ -27,48 +27,54 @@
     .budget-wrap label { font-size: 12px; color: #666; white-space: nowrap; }
     .budget-wrap input[type=range] { width: 120px; cursor: pointer; }
     .budget-label { font-size: 13px; font-weight: 600; min-width: 60px; }
-
-    /* Main */
-    main { max-width: 760px; margin: 0 auto; padding: 1.5rem 1rem; }
+    main { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; }
     .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
     .results-count strong { color: #1a1a1a; }
-
-    /* Cards */
-    .cards { display: flex; flex-direction: column; gap: 10px; }
-    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1.1rem 1.25rem; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .15s, transform .1s; text-decoration: none; color: inherit; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
+    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; overflow: hidden; cursor: pointer; transition: box-shadow .15s, transform .1s; }
     .card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
-    .card-icon { font-size: 30px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; background: #f8f7f4; border-radius: 12px; flex-shrink: 0; }
-    .card-body { flex: 1; min-width: 0; }
-    .card-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 5px; }
+    .card-img { width: 100%; height: 160px; object-fit: cover; display: block; }
+    .card-img-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 52px; background: #f8f7f4; }
+    .card-body { padding: 1rem 1.1rem; }
+    .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
     .card-name { font-size: 15px; font-weight: 600; }
-    .card-price { font-size: 13px; color: #888; }
-    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+    .card-price { font-size: 13px; color: #888; white-space: nowrap; }
+    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
     .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
     .tag-genre { background: #f0eef9; color: #4a3fa8; }
     .tag-vibe { background: #e4f5ee; color: #1a6e4a; }
-    .card-desc { font-size: 13px; color: #666; line-height: 1.55; }
-    .card-area { font-size: 11px; color: #aaa; margin-top: 6px; }
-
-    /* States */
+    .card-desc { font-size: 13px; color: #666; line-height: 1.55; margin-bottom: 8px; }
+    .card-footer { display: flex; align-items: center; justify-content: space-between; }
+    .card-area { font-size: 11px; color: #aaa; }
+    .like-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; background: none; border: 1px solid #e8e6e0; padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+    .like-btn.liked { color: #e85d24; border-color: #f5c4a8; background: #fff5f0; }
     .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
     .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
     .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
-
-    /* Genre emoji map */
-
-    @media (max-width: 480px) {
-      .filter-row { gap: 6px; }
-      .budget-wrap input[type=range] { width: 90px; }
-    }
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px; }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal p { font-size: 13px; color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+    .modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    .modal input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 12px; font-family: inherit; }
+    .modal input:focus { outline: none; border-color: #1a1a1a; }
+    .modal-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin-bottom: 8px; }
+    .modal-close { width: 100%; padding: 8px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
+    .modal-msg { font-size: 13px; margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; display: none; }
+    .modal-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
+    .modal-msg.error { background: #fdecea; color: #a0342e; display: block; }
+    @media (max-width: 480px) { .cards { grid-template-columns: 1fr; } .filter-row { gap: 6px; } .budget-wrap input[type=range] { width: 90px; } }
   </style>
 </head>
 <body>
-
 <header>
   <a class="logo" href="index.html">ワセ<span>メシ</span></a>
-  <a class="header-link" href="submit.html">＋ お店を登録</a>
+  <div class="header-right">
+    <div id="user-area"><button class="login-btn" onclick="openModal()">ログイン / 登録</button></div>
+    <a class="header-link" href="submit.html">＋ お店を登録</a>
+  </div>
 </header>
-
 <div class="filters-wrap">
   <div class="area-tabs">
     <button class="area-tab active" data-area="">全エリア</button>
@@ -78,16 +84,12 @@
   </div>
   <div class="filter-row">
     <select id="genre">
-      <option value="">ジャンルを選ぶ</option>
-      <option>ラーメン</option>
-      <option>定食・ごはん</option>
-      <option>カフェ</option>
-      <option>居酒屋・バー</option>
-      <option>カレー</option>
-      <option>寿司・和食</option>
+      <option value="">すべてのジャンル</option>
+      <option>ラーメン</option><option>定食・ごはん</option><option>カフェ</option>
+      <option>居酒屋・バー</option><option>カレー</option><option>寿司・和食</option>
     </select>
     <select id="vibe">
-      <option value="">雰囲気を選ぶ</option>
+      <option value="">すべての雰囲気</option>
       <option value="一人OK">一人でも入りやすい</option>
       <option value="グループ">グループ向け</option>
       <option value="デート">デートにおすすめ</option>
@@ -101,44 +103,108 @@
     </div>
   </div>
 </div>
-
 <main>
   <div class="results-count" id="results-count"></div>
   <div class="cards" id="cards"><div class="loading">読み込み中...</div></div>
 </main>
-
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>ログイン / 新規登録</h2>
+    <p>メールアドレスでログインするとお店にいいねをつけられます。</p>
+    <div class="modal-msg" id="modal-msg"></div>
+    <label>メールアドレス</label>
+    <input type="email" id="modal-email" placeholder="example@email.com">
+    <label>パスワード</label>
+    <input type="password" id="modal-pw" placeholder="6文字以上" onkeydown="if(event.key==='Enter')handleLogin()">
+    <button class="modal-btn" style="background:#1a1a1a;color:#fff;" onclick="handleLogin()">ログイン</button>
+    <button class="modal-btn" style="background:#f0ede8;color:#1a1a1a;" onclick="handleSignup()">新規登録</button>
+    <button class="modal-close" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
 <script>
-  // ===== ここを書き換えてください =====
   const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
-  // ====================================
-
-  const GENRE_EMOJI = { 'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣' };
-
+  const GENRE_EMOJI = {'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣'};
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  let allShops = [];
-  let currentArea = '';
+  let allShops = [], myLikes = new Set(), currentArea = '', currentUser = null;
 
-  async function loadShops() {
-    const { data, error } = await client
-      .from('shops')
-      .select('*')
-      .eq('status', 'approved')
-      .order('submitted_at', { ascending: false });
-
-    if (error) {
-      document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。URLとAPIキーを確認してください。</div>';
-      return;
+  async function initAuth() {
+    const { data: { session } } = await client.auth.getSession();
+    currentUser = session?.user || null;
+    updateUserArea();
+    if (currentUser) await loadMyLikes();
+  }
+  function updateUserArea() {
+    const el = document.getElementById('user-area');
+    if (currentUser) {
+      el.innerHTML = `<span class="user-info">${currentUser.email} <span class="logout-link" onclick="handleLogout()">ログアウト</span></span>`;
+    } else {
+      el.innerHTML = `<button class="login-btn" onclick="openModal()">ログイン / 登録</button>`;
     }
-    allShops = data || [];
+  }
+  async function handleLogin() {
+    const email = document.getElementById('modal-email').value.trim();
+    const pw = document.getElementById('modal-pw').value;
+    if (!email || !pw) { showModalMsg('入力してください', 'error'); return; }
+    const { data, error } = await client.auth.signInWithPassword({ email, password: pw });
+    if (error) { showModalMsg('ログインに失敗しました', 'error'); return; }
+    currentUser = data.user;
+    await loadMyLikes();
+    updateUserArea();
+    closeModal();
     renderCards();
   }
-
+  async function handleSignup() {
+    const email = document.getElementById('modal-email').value.trim();
+    const pw = document.getElementById('modal-pw').value;
+    if (!email || !pw) { showModalMsg('入力してください', 'error'); return; }
+    if (pw.length < 6) { showModalMsg('パスワードは6文字以上', 'error'); return; }
+    const { error } = await client.auth.signUp({ email, password: pw });
+    if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
+    showModalMsg('確認メールを送信しました。メールのリンクをクリックしてください。', 'success');
+  }
+  async function handleLogout() {
+    await client.auth.signOut();
+    currentUser = null; myLikes = new Set();
+    updateUserArea(); renderCards();
+  }
+  function openModal() { document.getElementById('modal-bg').classList.add('open'); }
+  function closeModal() {
+    document.getElementById('modal-bg').classList.remove('open');
+    document.getElementById('modal-msg').className = 'modal-msg';
+    document.getElementById('modal-email').value = '';
+    document.getElementById('modal-pw').value = '';
+  }
+  function showModalMsg(msg, type) {
+    const el = document.getElementById('modal-msg');
+    el.textContent = msg; el.className = 'modal-msg ' + type;
+  }
+  async function loadMyLikes() {
+    if (!currentUser) return;
+    const { data } = await client.from('likes').select('shop_id').eq('user_id', currentUser.id);
+    myLikes = new Set((data || []).map(l => l.shop_id));
+  }
+  async function toggleLike(e, shopId) {
+    e.stopPropagation();
+    if (!currentUser) { openModal(); return; }
+    if (myLikes.has(shopId)) {
+      await client.from('likes').delete().eq('shop_id', shopId).eq('user_id', currentUser.id);
+      myLikes.delete(shopId);
+    } else {
+      await client.from('likes').insert({ shop_id: shopId, user_id: currentUser.id });
+      myLikes.add(shopId);
+    }
+    renderCards();
+  }
+  async function loadShops() {
+    const { data, error } = await client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false });
+    if (error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
+    allShops = data || []; renderCards();
+  }
   function renderCards() {
     const genre = document.getElementById('genre').value;
     const vibe = document.getElementById('vibe').value;
     const budget = parseInt(document.getElementById('budget').value);
-
     const filtered = allShops.filter(s => {
       if (currentArea && s.area !== currentArea) return false;
       if (genre && s.genre !== genre) return false;
@@ -146,63 +212,33 @@
       if (s.price > budget) return false;
       return true;
     });
-
-    const countEl = document.getElementById('results-count');
-    countEl.innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
-
+    document.getElementById('results-count').innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
     const cardsEl = document.getElementById('cards');
-    if (!filtered.length) {
-      cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>';
-      return;
-    }
-
+    if (!filtered.length) { cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>'; return; }
     cardsEl.innerHTML = filtered.map(s => {
       const emoji = GENRE_EMOJI[s.genre] || '🍽️';
       const vibes = (s.vibe || []).map(v => `<span class="tag tag-vibe">${v}</span>`).join('');
-      const mapLink = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
-      return `
-        <div class="card" ${mapLink} title="${s.map_url ? 'Googleマップで開く' : ''}">
-          <div class="card-icon">${emoji}</div>
-          <div class="card-body">
-            <div class="card-top">
-              <span class="card-name">${s.name}</span>
-              <span class="card-price">〜¥${s.price.toLocaleString()}</span>
-            </div>
-            <div class="tags">
-              <span class="tag tag-genre">${s.genre}</span>
-              ${vibes}
-            </div>
-            <div class="card-desc">${s.description || ''}</div>
-            <div class="card-area">📍 ${s.area}</div>
-          </div>
-        </div>`;
+      const liked = myLikes.has(s.id);
+      const imgEl = s.image_url
+        ? `<img class="card-img" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">`
+        : `<div class="card-img-placeholder">${emoji}</div>`;
+      const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
+      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div><div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} いいね</button></div></div></div>`;
     }).join('');
   }
-
-  function openMap(e, url) {
-    e.preventDefault();
-    window.open(url, '_blank');
-  }
-
-  // Area tabs
+  function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
   document.querySelectorAll('.area-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.area-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentArea = btn.dataset.area;
-      renderCards();
+      btn.classList.add('active'); currentArea = btn.dataset.area; renderCards();
     });
   });
-
-  // Filters
   document.getElementById('genre').addEventListener('change', renderCards);
   document.getElementById('vibe').addEventListener('change', renderCards);
   document.getElementById('budget').addEventListener('input', e => {
-    document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`;
-    renderCards();
+    document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`; renderCards();
   });
-
-  loadShops();
+  initAuth().then(loadShops);
 </script>
 </body>
 </html>
