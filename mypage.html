@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マイページ — ワセメシ</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
+    header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
+    .logo span { color: #e85d24; }
+    .header-link { font-size: 13px; color: #666; text-decoration: none; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    /* ログイン促進 */
+    .login-prompt { text-align: center; padding: 4rem 2rem; }
+    .login-prompt h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .login-prompt p { font-size: 14px; color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+    .login-prompt-btn { font-size: 14px; font-weight: 700; background: #1a1a1a; color: #fff; border: none; padding: 12px 32px; border-radius: 12px; cursor: pointer; }
+
+    /* プロフィール */
+    .profile-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 16px; padding: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .avatar { width: 56px; height: 56px; border-radius: 50%; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: #4a3fa8; flex-shrink: 0; }
+    .profile-info { flex: 1; }
+    .profile-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+    .profile-email { font-size: 13px; color: #888; }
+    .logout-btn { font-size: 13px; color: #888; background: none; border: 1px solid #ddd; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+
+    /* 統計 */
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+    .stat { background: #fff; border: 1px solid #e8e6e0; border-radius: 12px; padding: 1rem; text-align: center; }
+    .stat-num { font-size: 24px; font-weight: 700; }
+    .stat-num.approved { color: #1a7a4a; }
+    .stat-num.pending { color: #e85d24; }
+    .stat-num.rejected { color: #888; }
+    .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
+
+    /* 投稿履歴 */
+    .section-title { font-size: 15px; font-weight: 700; margin-bottom: 12px; }
+    .shop-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
+    .shop-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+    .shop-name { font-size: 15px; font-weight: 600; }
+    .shop-meta { font-size: 12px; color: #888; margin-top: 2px; }
+    .badge { font-size: 11px; padding: 3px 10px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+    .badge-pending { background: #fff3e8; color: #a84f00; border: 1px solid #f5d5b0; }
+    .badge-approved { background: #e4f5ee; color: #1a6e4a; border: 1px solid #b0ddc5; }
+    .badge-rejected { background: #fdecea; color: #a0342e; border: 1px solid #f5c6c2; }
+    .rejection-reason { background: #fdecea; border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #a0342e; margin-top: 8px; line-height: 1.5; }
+    .rejection-reason strong { display: block; margin-bottom: 2px; }
+    .shop-date { font-size: 11px; color: #aaa; margin-top: 6px; }
+    .empty { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+    .loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
+
+    /* モーダル */
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 380px; }
+    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .modal p { font-size: 13px; color: #888; margin-bottom: 1.25rem; }
+    .modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+    .modal input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 12px; font-family: inherit; }
+    .modal input:focus { outline: none; border-color: #1a1a1a; }
+    .modal-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin-bottom: 8px; }
+    .modal-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; }
+    .modal-tab { flex: 1; padding: 8px; font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #666; }
+    .modal-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .modal-msg { font-size: 13px; margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; display: none; }
+    .modal-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
+    .modal-msg.error { background: #fdecea; color: #a0342e; display: block; }
+    .modal-close { width: 100%; padding: 8px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
+  </style>
+</head>
+<body>
+<header>
+  <a class="logo" href="index.html">ワセ<span>メシ</span></a>
+  <a class="header-link" href="index.html">← 検索に戻る</a>
+</header>
+
+<div class="container">
+  <!-- 未ログイン -->
+  <div class="login-prompt" id="login-prompt" style="display:none;">
+    <h2>ログインが必要です</h2>
+    <p>マイページを見るにはログインしてください。</p>
+    <button class="login-prompt-btn" onclick="openModal()">ログイン / 新規登録</button>
+  </div>
+
+  <!-- ログイン済み -->
+  <div id="mypage-content" style="display:none;">
+    <div class="profile-card">
+      <div class="avatar" id="avatar"></div>
+      <div class="profile-info">
+        <div class="profile-name" id="profile-name"></div>
+        <div class="profile-email" id="profile-email"></div>
+      </div>
+      <button class="logout-btn" onclick="handleLogout()">ログアウト</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num approved" id="s-approved">-</div><div class="stat-label">承認済み</div></div>
+      <div class="stat"><div class="stat-num pending" id="s-pending">-</div><div class="stat-label">審査待ち</div></div>
+      <div class="stat"><div class="stat-num rejected" id="s-rejected">-</div><div class="stat-label">却下</div></div>
+    </div>
+
+    <div class="section-title">投稿したお店</div>
+    <div id="shop-list"><div class="loading">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- ログインモーダル -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h2>ログイン / 新規登録</h2>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchModalTab('login')">ログイン</button>
+      <button class="modal-tab" onclick="switchModalTab('signup')">新規登録</button>
+    </div>
+    <div class="modal-msg" id="modal-msg"></div>
+    <div class="tab-content active" id="tab-login">
+      <label>メールアドレス</label>
+      <input type="email" id="login-email" placeholder="example@email.com">
+      <label>パスワード</label>
+      <input type="password" id="login-pw" placeholder="パスワード" onkeydown="if(event.key==='Enter')handleLogin()">
+      <button class="modal-btn" style="background:#1a1a1a;color:#fff;" onclick="handleLogin()">ログイン</button>
+    </div>
+    <div class="tab-content" id="tab-signup">
+      <label>ユーザー名</label>
+      <input type="text" id="signup-username" placeholder="例：waseda_taro">
+      <label>メールアドレス</label>
+      <input type="email" id="signup-email" placeholder="example@email.com">
+      <label>パスワード</label>
+      <input type="password" id="signup-pw" placeholder="6文字以上">
+      <button class="modal-btn" style="background:#1a1a1a;color:#fff;" onclick="handleSignup()">新規登録</button>
+    </div>
+    <button class="modal-close" onclick="closeModal()">閉じる</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let currentUser = null;
+
+  async function init() {
+    const { data: { session } } = await client.auth.getSession();
+    currentUser = session?.user || null;
+    if (currentUser) {
+      showMypage();
+    } else {
+      document.getElementById('login-prompt').style.display = 'block';
+    }
+  }
+
+  async function showMypage() {
+    document.getElementById('mypage-content').style.display = 'block';
+    document.getElementById('login-prompt').style.display = 'none';
+    const { data: profile } = await client.from('profiles').select('*').eq('id', currentUser.id).single();
+    if (profile) {
+      document.getElementById('avatar').textContent = profile.username.charAt(0).toUpperCase();
+      document.getElementById('profile-name').textContent = profile.username;
+    }
+    document.getElementById('profile-email').textContent = currentUser.email;
+    await loadMyShops();
+  }
+
+  async function loadMyShops() {
+    const { data, error } = await client.from('shops').select('*').eq('user_id', currentUser.id).order('submitted_at', { ascending: false });
+    const shops = data || [];
+    document.getElementById('s-approved').textContent = shops.filter(s => s.status === 'approved').length;
+    document.getElementById('s-pending').textContent = shops.filter(s => s.status === 'pending').length;
+    document.getElementById('s-rejected').textContent = shops.filter(s => s.status === 'rejected').length;
+
+    const listEl = document.getElementById('shop-list');
+    if (!shops.length) { listEl.innerHTML = '<div class="empty">まだお店を投稿していません</div>'; return; }
+
+    listEl.innerHTML = shops.map(s => {
+      const date = new Date(s.submitted_at).toLocaleDateString('ja-JP', {year:'numeric',month:'long',day:'numeric'});
+      const badgeClass = {pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected'}[s.status];
+      const badgeLabel = {pending:'審査待ち',approved:'承認・公開中',rejected:'却下'}[s.status];
+      const rejectionHtml = s.status === 'rejected' && s.rejection_reason
+        ? `<div class="rejection-reason"><strong>却下の理由：</strong>${s.rejection_reason}</div>` : '';
+      return `
+        <div class="shop-card">
+          <div class="shop-card-top">
+            <div>
+              <div class="shop-name">${s.name}</div>
+              <div class="shop-meta">${s.area} ・ ${s.genre} ・ 〜¥${s.price.toLocaleString()}</div>
+            </div>
+            <span class="badge ${badgeClass}">${badgeLabel}</span>
+          </div>
+          ${rejectionHtml}
+          <div class="shop-date">投稿日：${date}</div>
+        </div>`;
+    }).join('');
+  }
+
+  async function handleLogout() {
+    await client.auth.signOut();
+    window.location.href = 'index.html';
+  }
+
+  function openModal() { document.getElementById('modal-bg').classList.add('open'); }
+  function closeModal() { document.getElementById('modal-bg').classList.remove('open'); document.getElementById('modal-msg').className = 'modal-msg'; }
+  function switchModalTab(tab) {
+    document.querySelectorAll('.modal-tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
+    document.getElementById('tab-login').classList.toggle('active', tab==='login');
+    document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
+  }
+  function showModalMsg(msg, type) { const el = document.getElementById('modal-msg'); el.textContent = msg; el.className = 'modal-msg ' + type; }
+
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const pw = document.getElementById('login-pw').value;
+    if (!email || !pw) { showModalMsg('入力してください', 'error'); return; }
+    const { data, error } = await client.auth.signInWithPassword({ email, password: pw });
+    if (error) { showModalMsg('ログインに失敗しました', 'error'); return; }
+    currentUser = data.user;
+    closeModal();
+    showMypage();
+  }
+
+  async function handleSignup() {
+    const username = document.getElementById('signup-username').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const pw = document.getElementById('signup-pw').value;
+    if (!username || !email || !pw) { showModalMsg('すべて入力してください', 'error'); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) { showModalMsg('ユーザー名は英数字とアンダーバーのみ使えます', 'error'); return; }
+    if (pw.length < 6) { showModalMsg('パスワードは6文字以上', 'error'); return; }
+    const { data: existing } = await client.from('profiles').select('id').eq('username', username).single();
+    if (existing) { showModalMsg('このユーザー名はすでに使われています', 'error'); return; }
+    const { data, error } = await client.auth.signUp({ email, password: pw });
+    if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
+    if (data.user) await client.from('profiles').insert({ id: data.user.id, username });
+    showModalMsg('確認メールを送信しました', 'success');
+  }
+
+  init();
+</script>
+</body>
+</html>
