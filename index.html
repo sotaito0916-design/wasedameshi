@@ -49,6 +49,8 @@
     .card-footer { display: flex; align-items: center; justify-content: space-between; }
     .card-area { font-size: 11px; color: #aaa; }
     .like-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; background: none; border: 1px solid #e8e6e0; padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+    .card-hours { font-size: 12px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .card-hours-none { font-size: 12px; color: #bbb; font-style: italic; margin-top: 4px; }
     .card-menu { margin-top: 10px; border-top: 1px solid #f0ede8; padding-top: 10px; }
     .card-menu-title { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
     .card-menu-img { width: 100%; border-radius: 8px; object-fit: cover; max-height: 180px; display: block; cursor: zoom-in; transition: opacity .15s; }
@@ -124,6 +126,11 @@
       <label>予算上限</label>
       <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
       <span class="budget-label" id="budget-label">〜¥3,000</span>
+    </div>
+    <div class="budget-wrap">
+      <label>閉店時間</label>
+      <input type="time" id="close-filter" style="font-size:13px;padding:6px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;">
+      <button onclick="clearCloseFilter()" style="font-size:11px;color:#aaa;background:none;border:none;cursor:pointer;white-space:nowrap;">クリア</button>
     </div>
   </div>
 </div>
@@ -297,11 +304,13 @@
     const genre = document.getElementById('genre').value;
     const vibe = document.getElementById('vibe').value;
     const budget = parseInt(document.getElementById('budget').value);
+    const closeFilter = document.getElementById('close-filter').value;
     const filtered = allShops.filter(s => {
       if (currentArea && s.area !== currentArea) return false;
       if (genre && s.genre !== genre) return false;
       if (vibe && !(s.vibe || []).includes(vibe)) return false;
       if (s.price > budget) return false;
+      if (closeFilter && s.close_time && s.close_time < closeFilter) return false;
       return true;
     });
     document.getElementById('results-count').innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
@@ -314,14 +323,18 @@
       const likeCount = s.likeCount || 0;
       const imgEl = s.image_url ? `<img class="card-img" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` : `<div class="card-img-placeholder">${emoji}</div>`;
       const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
+      const hoursHtml = (s.open_time && s.close_time)
+        ? `<div class="card-hours">🕐 ${s.open_time} 〜 ${s.close_time}</div>`
+        : `<div class="card-hours-none">営業時間情報なし</div>`;
       const menuHtml = s.menu_image_url
         ? `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><img class="card-menu-img" src="${s.menu_image_url}" alt="メニュー表" onclick="openMenuModal(event,'${s.menu_image_url}')"></div>`
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
-      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div></div></div>`;
+      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div></div></div>`;
     }).join('');
   }
 
   function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
+  function clearCloseFilter() { document.getElementById('close-filter').value = ''; renderCards(); }
   function openMenuModal(e, url) { e.stopPropagation(); document.getElementById('menu-modal-img').src = url; document.getElementById('menu-modal-bg').classList.add('open'); }
   function closeMenuModal() { document.getElementById('menu-modal-bg').classList.remove('open'); }
   document.querySelectorAll('.area-tab').forEach(btn => {
@@ -331,6 +344,7 @@
     });
   });
   document.getElementById('genre').addEventListener('change', renderCards);
+  document.getElementById('close-filter').addEventListener('change', renderCards);
   document.getElementById('vibe').addEventListener('change', renderCards);
   document.getElementById('budget').addEventListener('input', e => {
     document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`; renderCards();
