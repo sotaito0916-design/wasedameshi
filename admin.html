@@ -110,6 +110,12 @@
     .save-btn:disabled { opacity: .5; cursor: not-allowed; }
     .cancel-btn { padding: 11px 20px; font-size: 14px; color: #888; background: #f0ede8; border: none; border-radius: 10px; cursor: pointer; }
     .save-msg { font-size: 13px; margin-top: 8px; padding: 8px 12px; border-radius: 8px; display: none; text-align: center; }
+    .img-manage-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .img-manage-item { position: relative; width: 80px; }
+    .img-manage-item img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; display: block; }
+    .img-manage-item .img-badge { position: absolute; top: -6px; left: 0; right: 0; text-align: center; font-size: 9px; padding: 1px 4px; border-radius: 999px; font-weight: 600; }
+    .img-manage-item .img-actions { display: flex; gap: 2px; margin-top: 3px; }
+    .img-manage-item .img-actions button { flex: 1; font-size: 9px; padding: 2px 3px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
     .user-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
     .user-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
     .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #4a3fa8; flex-shrink: 0; }
@@ -167,14 +173,15 @@
     <input type="hidden" id="edit-current-image">
 
     <div class="form-group">
-      <label>現在の画像</label>
-      <div id="edit-img-current"></div>
-      <button type="button" onclick="clearImage()" style="font-size:12px;color:#a0342e;background:#fdecea;border:1px solid #f5c6c2;padding:5px 12px;border-radius:8px;cursor:pointer;margin-bottom:8px;">🗑 画像をデフォルトに戻す（著作権対応）</button>
-      <div class="img-upload-small">
-        <input type="file" id="edit-image" accept="image/*" onchange="previewEditImage(this)">
-        📷 画像を変更する（クリックまたはドラッグ）
-        <img id="edit-img-new-preview" class="img-new-preview" alt="新しい画像プレビュー">
+      <label>写真の管理</label>
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">代表・公開・非公開を選択できます。代表画像がカードに表示されます。</div>
+      <div id="edit-img-manage" class="img-manage-grid"></div>
+      <div class="img-upload-small" style="margin-top:10px;">
+        <input type="file" id="edit-image" accept="image/*" multiple onchange="previewEditImages(this)">
+        📷 写真を追加する（複数選択可）
+        <input type="hidden" id="edit-current-img-url">
       </div>
+      <div id="edit-img-new-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
     </div>
 
     <div class="form-group">
@@ -362,14 +369,15 @@
     document.getElementById('edit-map').value = s.map_url || '';
     document.getElementById('edit-open').value = s.open_time || '';
     document.getElementById('edit-close').value = s.close_time || '';
-    document.getElementById('edit-img-new-preview').style.display = 'none';
     document.getElementById('edit-image').value = '';
+    document.getElementById('edit-img-new-previews').innerHTML = '';
     document.getElementById('edit-menu-preview').style.display = 'none';
     document.getElementById('edit-menu-image').value = '';
     const menuCurrent = document.getElementById('edit-menu-current');
     menuCurrent.innerHTML = s.menu_image_url
       ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
       : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
+    await loadImgManageGrid(s.id, s.image_url);
     const imgCurrent = document.getElementById('edit-img-current');
     imgCurrent.innerHTML = s.image_url
       ? `<img class="img-current" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=img-current-placeholder>${emoji}</div>'">`
@@ -382,14 +390,15 @@
   function clearImage() {
     document.getElementById('edit-current-image').value = '';
     document.getElementById('edit-img-current').innerHTML = '<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#aaa;background:#f8f7f4;border-radius:10px;">デフォルト画像（ジャンルアイコン）に設定されます</div>';
-    document.getElementById('edit-img-new-preview').style.display = 'none';
     document.getElementById('edit-image').value = '';
+    document.getElementById('edit-img-new-previews').innerHTML = '';
     document.getElementById('edit-menu-preview').style.display = 'none';
     document.getElementById('edit-menu-image').value = '';
     const menuCurrent = document.getElementById('edit-menu-current');
     menuCurrent.innerHTML = s.menu_image_url
       ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
       : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
+    await loadImgManageGrid(s.id, s.image_url);
   }
 
   function previewEditImage(input) {
@@ -422,15 +431,15 @@
     const btn = document.getElementById('save-btn');
     btn.disabled = true; btn.textContent = '保存中...';
 
-    let image_url = document.getElementById('edit-current-image').value || null;
-
-    if (imageFile) {
-      const ext = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${ext}`;
-      const { data: uploadData, error: uploadError } = await client.storage.from('shop-images').upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
+    const image_url = document.getElementById('edit-current-img-url').value || null;
+    const newImageFiles = Array.from(document.getElementById('edit-image').files || []);
+    for (const file of newImageFiles) {
+      const ext = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (!uploadError) {
         const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
-        image_url = urlData.publicUrl;
+        await client.from('shop_images').insert({ shop_id: id, image_url: urlData.publicUrl, is_primary: false, is_hidden: false });
       }
     }
 
@@ -464,6 +473,73 @@
     const shop = allShops.find(s => s.id === shopId);
     const emoji = shop ? (({'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣'})[shop.genre] || '🍽️') : '🍽️';
     document.getElementById('edit-img-current').innerHTML = '<div class="img-current-placeholder">' + emoji + '</div>';
+  }
+
+  let editNewImages = [];
+
+  async function loadImgManageGrid(shopId, currentPrimaryUrl) {
+    const grid = document.getElementById('edit-img-manage');
+    grid.innerHTML = '<div style="font-size:12px;color:#aaa;">読み込み中...</div>';
+    const { data: imgs } = await client.from('shop_images').select('*').eq('shop_id', shopId).order('uploaded_at', { ascending: true });
+    const images = imgs || [];
+
+    if (!images.length) {
+      grid.innerHTML = currentPrimaryUrl
+        ? `<div class="img-manage-item"><img src="${currentPrimaryUrl}"><div style="font-size:9px;text-align:center;background:#1a7a4a;color:#fff;border-radius:999px;padding:1px 4px;margin-top:2px;">代表</div></div><div style="font-size:12px;color:#aaa;margin-top:6px;">shop_imagesに写真がありません。上のフォームから追加できます。</div>`
+        : '<div style="font-size:12px;color:#aaa;">写真がありません</div>';
+      document.getElementById('edit-current-img-url').value = currentPrimaryUrl || '';
+      return;
+    }
+
+    document.getElementById('edit-current-img-url').value = (images.find(i=>i.is_primary)||images[0])?.image_url || currentPrimaryUrl || '';
+
+    grid.innerHTML = images.map(img => {
+      const isPrimary = img.is_primary;
+      const isHidden = img.is_hidden;
+      return `<div class="img-manage-item" id="imgitem-${img.id}">
+        <img src="${img.image_url}" style="border:2px solid ${isPrimary?'#1a7a4a':isHidden?'#e8e6e0':'#e8e6e0'};opacity:${isHidden?'0.4':'1'};">
+        <div class="img-badge" style="background:${isPrimary?'#1a7a4a':isHidden?'#888':'#4a3fa8'};color:#fff;">
+          ${isPrimary?'代表':isHidden?'非公開':'公開'}
+        </div>
+        <div class="img-actions">
+          <button onclick="setImgRole('${img.id}','${shopId}','primary','${img.image_url}')" style="background:#1a7a4a;color:#fff;">代表</button>
+          <button onclick="setImgRole('${img.id}','${shopId}','visible','${img.image_url}')" style="background:#4a3fa8;color:#fff;">公開</button>
+          <button onclick="setImgRole('${img.id}','${shopId}','hidden','${img.image_url}')" style="background:#888;color:#fff;">非公開</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function setImgRole(imgId, shopId, role, url) {
+    if (role === 'primary') {
+      await client.from('shop_images').update({ is_primary: false }).eq('shop_id', shopId);
+      await client.from('shop_images').update({ is_primary: true, is_hidden: false }).eq('id', imgId);
+      await client.from('shops').update({ image_url: url }).eq('id', shopId);
+      document.getElementById('edit-current-img-url').value = url;
+    } else if (role === 'visible') {
+      await client.from('shop_images').update({ is_primary: false, is_hidden: false }).eq('id', imgId);
+    } else {
+      await client.from('shop_images').update({ is_primary: false, is_hidden: true }).eq('id', imgId);
+    }
+    const currentId = document.getElementById('edit-id').value;
+    const currentShop = allShops.find(s => s.id === currentId);
+    await loadImgManageGrid(shopId, currentShop?.image_url);
+  }
+
+  function previewEditImages(input) {
+    const files = Array.from(input.files);
+    const previewArea = document.getElementById('edit-img-new-previews');
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { alert(`${file.name}は5MB以下にしてください`); return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position:relative;width:64px;height:64px;';
+        item.innerHTML = `<img src="${e.target.result}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">`;
+        previewArea.appendChild(item);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   function previewEditMenu(input) {
