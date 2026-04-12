@@ -26,7 +26,7 @@
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1.5rem; }
     .stat { background: #fff; border: 1px solid #e8e6e0; border-radius: 12px; padding: 1rem; text-align: center; }
     .stat-num { font-size: 28px; font-weight: 700; }
-    .stat-num.pending { color: #e85d24; }
+    .stat-num.pending { color: #8f0000; }
     .stat-num.approved { color: #1a7a4a; }
     .stat-num.rejected { color: #888; }
     .stat-label { font-size: 12px; color: #888; margin-top: 2px; }
@@ -46,17 +46,17 @@
     .badge-rejected { background: #fdecea; color: #a0342e; border: 1px solid #f5c6c2; }
     .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
     .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
-    .tag-genre { background: #f0eef9; color: #4a3fa8; }
+    .tag-genre { background: #f9f0f0; color: #8f0000; }
     .tag-vibe { background: #e4f5ee; color: #1a6e4a; }
     .shop-desc { font-size: 13px; color: #666; line-height: 1.55; margin-bottom: 8px; }
-    .shop-map { font-size: 12px; color: #4a3fa8; text-decoration: none; display: inline-block; margin-bottom: 8px; }
+    .shop-map { font-size: 12px; color: #8f0000; text-decoration: none; display: inline-block; margin-bottom: 8px; }
     .shop-date { font-size: 11px; color: #aaa; margin-bottom: 10px; }
     .actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn { font-size: 13px; padding: 7px 16px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: opacity .15s; border: 1px solid; }
     .btn:hover { opacity: .75; }
     .btn-approve { border-color: #b0ddc5; background: #e4f5ee; color: #1a6e4a; }
     .btn-reject { border-color: #f5c6c2; background: #fdecea; color: #a0342e; }
-    .btn-edit { border-color: #d4d0f0; background: #f0eef9; color: #4a3fa8; }
+    .btn-edit { border-color: #d4d0f0; background: #f9f0f0; color: #8f0000; }
     .btn-restore { border-color: #ddd; background: #f8f7f4; color: #666; }
     .empty { text-align: center; padding: 3rem; color: #888; font-size: 14px; }
     .loading { text-align: center; padding: 2rem; color: #888; font-size: 14px; }
@@ -98,14 +98,14 @@
     .img-manage-item .img-actions button { flex: 1; font-size: 9px; padding: 2px 3px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; }
     .user-card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 10px; }
     .user-card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f0eef9; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #4a3fa8; flex-shrink: 0; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f9f0f0; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #8f0000; flex-shrink: 0; }
     .user-info-block { flex: 1; }
     .user-username { font-size: 15px; font-weight: 600; }
     .user-meta { font-size: 12px; color: #888; }
     .username-edit-row { display: flex; gap: 8px; align-items: center; }
     .username-edit-row input { flex: 1; padding: 7px 10px; font-size: 13px; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
     .username-edit-row input:focus { outline: none; border-color: #1a1a1a; }
-    .username-edit-row button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #d4d0f0; background: #f0eef9; color: #4a3fa8; cursor: pointer; white-space: nowrap; }
+    .username-edit-row button { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid #d4a0a0; background: #f9f0f0; color: #8f0000; cursor: pointer; white-space: nowrap; }
     .save-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
     .save-msg.error { background: #fdecea; color: #a0342e; display: block; }
   </style>
@@ -681,7 +681,7 @@
             </div>
           </div>
           <details style="margin-bottom:12px;">
-            <summary style="font-size:13px;font-weight:600;cursor:pointer;color:#4a3fa8;">📋 最初の投稿情報と写真履歴</summary>
+            <summary style="font-size:13px;font-weight:600;cursor:pointer;color:#8f0000;">📋 最初の投稿情報と写真履歴</summary>
             <div style="margin-top:10px;padding:10px;background:#f8f7f4;border-radius:8px;">
               ${orig ? `<div style="font-size:12px;line-height:1.8;margin-bottom:8px;">
                 <strong>店名：</strong>${orig.name || '-'}<br>
