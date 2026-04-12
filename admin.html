@@ -355,12 +355,11 @@
     updateStats(); renderList();
   }
 
-  function openEdit(id) {
+  async function openEdit(id) {
     const s = allShops.find(s => s.id === id);
     if (!s) return;
     const emoji = GENRE_EMOJI[s.genre] || '🍽️';
     document.getElementById('edit-id').value = s.id;
-    document.getElementById('edit-current-image').value = s.image_url || '';
     document.getElementById('edit-name').value = s.name;
     document.getElementById('edit-genre').value = s.genre;
     document.getElementById('edit-area').value = s.area;
@@ -378,10 +377,7 @@
       ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
       : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
     await loadImgManageGrid(s.id, s.image_url);
-    const imgCurrent = document.getElementById('edit-img-current');
-    imgCurrent.innerHTML = s.image_url
-      ? `<img class="img-current" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=img-current-placeholder>${emoji}</div>'">`
-      : `<div class="img-current-placeholder">${emoji}</div>`;
+
     document.querySelectorAll('#modal-bg .vibe-label input').forEach(cb => { cb.checked = (s.vibe || []).includes(cb.value); });
     document.getElementById('save-msg').className = 'save-msg';
     document.getElementById('modal-bg').classList.add('open');
