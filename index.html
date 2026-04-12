@@ -10,7 +10,7 @@
     body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
     header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 10; }
     .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
-    .logo span { color: #e85d24; }
+    .logo span { color: #8f0000; }
     .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .header-link { font-size: 13px; color: #666; text-decoration: none; background: #f0ede8; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
     .header-link:hover { background: #e8e5e0; }
@@ -43,7 +43,7 @@
     .card-price { font-size: 13px; color: #888; white-space: nowrap; }
     .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
     .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
-    .tag-genre { background: #f0eef9; color: #4a3fa8; }
+    .tag-genre { background: #f9f0f0; color: #8f0000; }
     .tag-vibe { background: #e4f5ee; color: #1a6e4a; }
     .card-desc { font-size: 13px; color: #666; line-height: 1.55; margin-bottom: 8px; }
     .card-footer { display: flex; align-items: center; justify-content: space-between; }
@@ -53,7 +53,7 @@
     .card-images { position: relative; overflow: hidden; }
     .card-img-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
     .card-actions { display: flex; gap: 6px; margin-top: 8px; }
-    .edit-propose-btn { font-size: 11px; color: #4a3fa8; background: #f0eef9; border: 1px solid #d4d0f0; padding: 4px 10px; border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .edit-propose-btn { font-size: 11px; color: #8f0000; background: #f9f0f0; border: 1px solid #d4a0a0; padding: 4px 10px; border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
     .img-gallery-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
     .img-gallery-bg.open { display: flex; }
     .img-gallery-img { max-width: 90vw; max-height: 75vh; border-radius: 12px; object-fit: contain; }
@@ -70,7 +70,7 @@
     .menu-modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 1rem; cursor: zoom-out; }
     .menu-modal-bg.open { display: flex; }
     .menu-modal-img { max-width: 100%; max-height: 90vh; border-radius: 12px; object-fit: contain; }
-    .like-btn.liked { color: #e85d24; border-color: #f5c4a8; background: #fff5f0; }
+    .like-btn.liked { color: #8f0000; border-color: #d4a0a0; background: #fff0f0; }
     .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
     .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
     .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
@@ -390,14 +390,17 @@
         : `<div class="card-img-placeholder">${emoji}</div>`;
       const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
       const hoursHtml = (s.open_time && s.close_time)
-        ? `<div class="card-hours">🕐 ${s.open_time} 〜 ${s.close_time}</div>`
+        ? `<div class="card-hours" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
+            <span>🕐 ${s.open_time} 〜 ${s.close_time}</span>
+            <span style="font-size:10px;color:#bbb;">正確な時間はGoogleマップを参照</span>
+           </div>`
         : `<div class="card-hours-none">営業時間情報なし</div>`;
       const primaryMenu = s.menuImages.find(i => i.is_primary) || s.menuImages[0];
       const menuUrl = primaryMenu?.image_url || s.menu_image_url;
       const allMenuUrls = s.menuImages.length > 0 ? s.menuImages.map(i => i.image_url) : (s.menu_image_url ? [s.menu_image_url] : []);
       const menuImagesJson = encodeURIComponent(JSON.stringify(allMenuUrls));
       const menuHtml = menuUrl
-        ? `<div class="card-menu"><div class="card-menu-title" style="display:flex;align-items:center;justify-content:space-between;">📋 メニュー表${allMenuUrls.length > 1 ? `<span style="font-size:11px;color:#4a3fa8;cursor:pointer;" data-images="${menuImagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">${allMenuUrls.length}枚</span>` : ''}</div><img class="card-menu-img" src="${menuUrl}" alt="メニュー表" onclick="openMenuModal(event,'${menuUrl}')"></div>`
+        ? `<div class="card-menu"><div class="card-menu-title" style="display:flex;align-items:center;justify-content:space-between;">📋 メニュー表${allMenuUrls.length > 1 ? `<span style="font-size:11px;color:#8f0000;cursor:pointer;" data-images="${menuImagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">${allMenuUrls.length}枚</span>` : ''}</div><img class="card-menu-img" src="${menuUrl}" alt="メニュー表" onclick="openMenuModal(event,'${menuUrl}')"></div>`
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
       return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span></div>
       <div class="card-actions">
