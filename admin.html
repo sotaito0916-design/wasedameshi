@@ -152,6 +152,7 @@
       <button class="tab" onclick="switchTab('approved')">承認済み</button>
       <button class="tab" onclick="switchTab('rejected')">却下</button>
       <button class="tab" onclick="switchTab('users')">ユーザー管理</button>
+      <button class="tab" onclick="switchTab('edits')">編集提案</button>
     </div>
     <button class="refresh-btn" onclick="currentTab==='users' ? loadUsers() : loadShops()">↻ 再読み込み</button>
     <div id="shop-list"><div class="loading">読み込み中...</div></div>
@@ -319,6 +320,7 @@
 
   function renderList() {
     if (currentTab === 'users') { renderUserList(); return; }
+    if (currentTab === 'edits') { renderEditList(); return; }
     const filtered = allShops.filter(s => s.status === currentTab);
     const listEl = document.getElementById('shop-list');
     if (!filtered.length) { const labels = {pending:'審査待ちのお店はありません',approved:'承認済みのお店はありません',rejected:'却下したお店はありません'}; listEl.innerHTML = `<div class="empty">${labels[currentTab]}</div>`; return; }
@@ -480,6 +482,99 @@
     document.getElementById('edit-menu-image').value = '';
     document.getElementById('edit-menu-preview').style.display = 'none';
     document.getElementById('edit-menu-current').innerHTML = '<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>';
+  }
+
+  async function renderEditList() {
+    const listEl = document.getElementById('shop-list');
+    listEl.innerHTML = '<div class="loading">読み込み中...</div>';
+    const { data, error } = await client.from('shop_edits').select('*, shops(name)').order('submitted_at', { ascending: false });
+    if (error || !data) { listEl.innerHTML = '<div class="empty">読み込みに失敗しました</div>'; return; }
+    if (!data.length) { listEl.innerHTML = '<div class="empty">編集提案はありません</div>'; return; }
+
+    listEl.innerHTML = data.map(e => {
+      const p = e.proposed_data;
+      const badgeClass = {pending:'badge-pending',approved:'badge-approved',rejected:'badge-rejected'}[e.status];
+      const badgeLabel = {pending:'未確認',approved:'承認済み',rejected:'却下'}[e.status];
+      const date = new Date(e.submitted_at).toLocaleDateString('ja-JP', {year:'numeric',month:'long',day:'numeric'});
+      const newImgs = (p.new_images || []).map((url, i) =>
+        `<div style="position:relative;display:inline-block;margin:4px;">
+          <img src="${url}" style="width:80px;height:80px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="setAsPrimary('${e.shop_id}','${url}')">
+          <button onclick="addToShopImages('${e.shop_id}','${url}')" style="position:absolute;bottom:-2px;right:-2px;font-size:10px;padding:2px 6px;background:#1a7a4a;color:#fff;border:none;border-radius:999px;cursor:pointer;">追加</button>
+        </div>`).join('');
+      const actions = e.status === 'pending' ? `
+        <button class="btn btn-approve" onclick="approveEdit('${e.id}','${e.shop_id}')">✓ 承認して反映</button>
+        <button class="btn btn-reject" onclick="rejectEdit('${e.id}')">✕ 却下</button>` : '';
+      return `
+        <div class="shop-card">
+          <div class="shop-card-body">
+            <div class="shop-card-top">
+              <div>
+                <div class="shop-name">「${e.shops?.name || '不明'}」への編集提案</div>
+                <div class="shop-meta">${date}</div>
+              </div>
+              <span class="badge ${badgeClass}">${badgeLabel}</span>
+            </div>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;margin-bottom:10px;">
+              <tr style="background:#f8f7f4;"><th style="padding:4px 8px;text-align:left;font-size:11px;color:#888;">項目</th><th style="padding:4px 8px;text-align:left;font-size:11px;color:#888;">変更後</th></tr>
+              <tr><td style="padding:4px 8px;color:#888;font-size:12px;">店名</td><td style="padding:4px 8px;font-size:12px;">${p.name || '-'}</td></tr>
+              <tr style="background:#f8f7f4;"><td style="padding:4px 8px;color:#888;font-size:12px;">ジャンル</td><td style="padding:4px 8px;font-size:12px;">${p.genre || '-'}</td></tr>
+              <tr><td style="padding:4px 8px;color:#888;font-size:12px;">予算</td><td style="padding:4px 8px;font-size:12px;">${p.price ? '〜¥'+p.price.toLocaleString() : '-'}</td></tr>
+              <tr style="background:#f8f7f4;"><td style="padding:4px 8px;color:#888;font-size:12px;">営業時間</td><td style="padding:4px 8px;font-size:12px;">${(p.open_time && p.close_time) ? p.open_time+'〜'+p.close_time : '-'}</td></tr>
+              <tr><td style="padding:4px 8px;color:#888;font-size:12px;">コメント</td><td style="padding:4px 8px;font-size:12px;">${p.description || '-'}</td></tr>
+            </table>
+            ${p.reason ? `<div style="font-size:12px;color:#888;margin-bottom:8px;">📝 変更理由：${p.reason}</div>` : ''}
+            ${newImgs ? `<div style="margin-bottom:8px;"><div style="font-size:12px;color:#888;margin-bottom:4px;">📷 提案された写真（「追加」で複数画像に追加）：</div>${newImgs}</div>` : ''}
+            <div class="actions">${actions}</div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function approveEdit(editId, shopId) {
+    const edit = (await client.from('shop_edits').select('proposed_data').eq('id', editId).single()).data;
+    if (!edit) return;
+    const p = edit.proposed_data;
+    const updateData = {};
+    if (p.name) updateData.name = p.name;
+    if (p.genre) updateData.genre = p.genre;
+    if (p.area) updateData.area = p.area;
+    if (p.price) updateData.price = p.price;
+    if (p.vibe) updateData.vibe = p.vibe;
+    if (p.description !== undefined) updateData.description = p.description;
+    if (p.map_url !== undefined) updateData.map_url = p.map_url;
+    if (p.open_time !== undefined) updateData.open_time = p.open_time;
+    if (p.close_time !== undefined) updateData.close_time = p.close_time;
+    await client.from('shops').update(updateData).eq('id', shopId);
+    for (const url of (p.new_images || [])) {
+      await client.from('shop_images').insert({ shop_id: shopId, image_url: url, is_primary: false });
+    }
+    await client.from('shop_edits').update({ status: 'approved' }).eq('id', editId);
+    alert('承認して反映しました！');
+    renderEditList();
+  }
+
+  async function rejectEdit(editId) {
+    const reason = prompt('却下の理由（任意）:');
+    await client.from('shop_edits').update({ status: 'rejected', rejection_reason: reason || null }).eq('id', editId);
+    renderEditList();
+  }
+
+  async function addToShopImages(shopId, url) {
+    await client.from('shop_images').insert({ shop_id: shopId, image_url: url, is_primary: false });
+    alert('写真を追加しました！');
+  }
+
+  async function setAsPrimary(shopId, url) {
+    if (!confirm('この写真を代表画像に設定しますか？')) return;
+    await client.from('shop_images').update({ is_primary: false }).eq('shop_id', shopId);
+    const { data: existing } = await client.from('shop_images').select('id').eq('shop_id', shopId).eq('image_url', url).single();
+    if (existing) {
+      await client.from('shop_images').update({ is_primary: true }).eq('id', existing.id);
+    } else {
+      await client.from('shop_images').insert({ shop_id: shopId, image_url: url, is_primary: true });
+    }
+    await client.from('shops').update({ image_url: url }).eq('id', shopId);
+    alert('代表画像を設定しました！');
   }
 
   function showSaveMsg(msg, type) { const el = document.getElementById('save-msg'); el.textContent = msg; el.className = 'save-msg ' + type; }
