@@ -8,10 +8,10 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
-    header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
-    .logo { font-size: 18px; font-weight: 700; color: #1a1a1a; text-decoration: none; }
+    header { background: #fff; border-bottom: 3px solid #8f0000; padding: 0.5rem 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; min-height: 56px; }
+    .logo { font-size: 16px; font-weight: 700; color: #1a1a1a; text-decoration: none; white-space: nowrap; }
     .logo span { color: #8f0000; }
-    .header-link { font-size: 13px; color: #666; text-decoration: none; }
+    .header-link { font-size: 12px; color: #666; text-decoration: none; white-space: nowrap; }
     .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
     .login-prompt { text-align: center; padding: 4rem 2rem; }
     .login-prompt h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
@@ -83,7 +83,7 @@
 </head>
 <body>
 <header>
-  <a class="logo" href="index.html">ワセ<span>メシ</span></a>
+  <a class="logo" href="index.html">ワセ<span>メシ</span>サーチ</a>
   <a class="header-link" href="index.html">← 検索に戻る</a>
 </header>
 
