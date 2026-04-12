@@ -41,6 +41,11 @@
     .img-upload-text strong { color: #1a1a1a; }
     .img-preview { width: 100%; height: 200px; object-fit: cover; border-radius: 10px; display: none; margin-top: 10px; }
     .img-remove { font-size: 12px; color: #e85d24; cursor: pointer; display: none; margin-top: 6px; text-align: center; }
+    .img-preview-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .img-preview-item { position: relative; width: 80px; height: 80px; }
+    .img-preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .img-preview-item .remove-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #e85d24; color: #fff; border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .img-preview-item .primary-badge { position: absolute; bottom: -6px; left: 0; right: 0; text-align: center; font-size: 9px; background: #1a7a4a; color: #fff; border-radius: 999px; padding: 1px 4px; }
 
     .submit-btn { width: 100%; padding: 13px; font-size: 15px; font-weight: 700; background: #1a1a1a; color: #fff; border: none; border-radius: 12px; cursor: pointer; margin-top: 6px; transition: opacity .15s; }
     .submit-btn:hover { opacity: .85; }
@@ -102,22 +107,19 @@
       </div>
     </div>
     <div class="form-group">
-      <label>お店の写真（任意）</label>
+      <label>お店の写真（複数可・任意）</label>
       <div class="img-upload" id="img-upload">
-        <input type="file" id="f-image" accept="image/*" onchange="previewImage(this)">
-        <div id="img-placeholder">
-          <div class="img-upload-icon">📷</div>
-          <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>して画像をアップロード<br>JPG・PNG・WebP（最大5MB）</div>
-        </div>
-        <img id="img-preview" class="img-preview" alt="プレビュー">
+        <input type="file" id="f-images" accept="image/*" multiple onchange="previewImages(this)">
+        <div class="img-upload-icon">📷</div>
+        <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>して写真を追加（複数選択可）<br>JPG・PNG・WebP（各5MB以下）</div>
       </div>
-      <div class="img-remove" id="img-remove" onclick="removeImage()">✕ 画像を削除</div>
+      <div class="img-preview-list" id="img-preview-list"></div>
+      <p class="hint" style="margin-top:6px;">最初に追加した写真が代表画像になります。後から管理者が変更できます。</p>
       <div style="background:#fff3e8;border:1px solid #f5d5b0;border-radius:8px;padding:10px 12px;font-size:12px;color:#a84f00;margin-top:8px;line-height:1.7;">
         📷 <strong>必ず自分で撮影した写真を使用してください。</strong><br>
         インターネット上の画像・他サイトの写真・食べログ等からの転載は著作権法違反となります。<br>
         著作権違反が判明した場合、画像はデフォルト画像に差し替えられます。
       </div>
-      <p class="hint" style="color:#e85d24;margin-top:4px;">⚠️ 著作権のある画像（他サイトからの転載・有名人・キャラクターなど）は使用しないでください。管理者が確認の上、不適切な画像はデフォルト画像に差し替えます。</p>
     </div>
     <div class="form-group">
       <label>おすすめポイント</label>
@@ -188,25 +190,33 @@
     document.getElementById('menu-remove').style.display = 'none';
   }
 
-  function previewImage(input) {
-    const file = input.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showError('画像は5MB以下にしてください'); input.value = ''; return; }
-    const reader = new FileReader();
-    reader.onload = e => {
-      document.getElementById('img-preview').src = e.target.result;
-      document.getElementById('img-preview').style.display = 'block';
-      document.getElementById('img-placeholder').style.display = 'none';
-      document.getElementById('img-remove').style.display = 'block';
-    };
-    reader.readAsDataURL(file);
+  let selectedImages = [];
+
+  function previewImages(input) {
+    const files = Array.from(input.files);
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { showError(`${file.name}は5MB以下にしてください`); return; }
+      const idx = selectedImages.length;
+      selectedImages.push(file);
+      const reader = new FileReader();
+      reader.onload = e => {
+        const item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.id = `prev-${idx}`;
+        item.innerHTML = `<img src="${e.target.result}" alt="プレビュー">
+          <button class="remove-btn" onclick="removeImage(${idx})">✕</button>
+          ${idx === 0 ? '<span class="primary-badge">代表</span>' : ''}`;
+        document.getElementById('img-preview-list').appendChild(item);
+      };
+      reader.readAsDataURL(file);
+    });
+    input.value = '';
   }
 
-  function removeImage() {
-    document.getElementById('f-image').value = '';
-    document.getElementById('img-preview').style.display = 'none';
-    document.getElementById('img-placeholder').style.display = 'block';
-    document.getElementById('img-remove').style.display = 'none';
+  function removeImage(idx) {
+    selectedImages[idx] = null;
+    const el = document.getElementById(`prev-${idx}`);
+    if (el) el.remove();
   }
 
   async function submitShop() {
@@ -232,19 +242,21 @@
     btn.textContent = '送信中...';
 
     let image_url = null;
+    const uploadedImageUrls = [];
 
-    if (imageFile) {
+    const imagesToUpload = selectedImages.filter(f => f !== null);
+    if (imagesToUpload.length > 0) {
       document.getElementById('progress').style.display = 'block';
-      const ext = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}.${ext}`;
-      const { data: uploadData, error: uploadError } = await client.storage
-        .from('shop-images').upload(fileName, imageFile, { cacheControl: '3600', upsert: false });
-      if (uploadError) {
-        showError('画像のアップロードに失敗しました。画像なしで投稿します。');
-      } else {
-        const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
-        image_url = urlData.publicUrl;
+      for (const file of imagesToUpload) {
+        const ext = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+        if (!uploadError) {
+          const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
+          uploadedImageUrls.push(urlData.publicUrl);
+        }
       }
+      if (uploadedImageUrls.length > 0) image_url = uploadedImageUrls[0];
       document.getElementById('progress').style.display = 'none';
     }
 
@@ -262,7 +274,14 @@
       }
     }
 
-    const { error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, status: 'pending', user_id: user?.id || null });
+    const originalData = { name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, saved_at: new Date().toISOString() };
+    const { data: insertedShop, error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, status: 'pending', user_id: user?.id || null, original_data: originalData }).select().single();
+
+    if (!error && insertedShop && uploadedImageUrls.length > 0) {
+      for (let i = 0; i < uploadedImageUrls.length; i++) {
+        await client.from('shop_images').insert({ shop_id: insertedShop.id, image_url: uploadedImageUrls[i], is_primary: i === 0 });
+      }
+    }
     if (error) {
       showError('送信に失敗しました。しばらくしてもう一度お試しください。');
       btn.disabled = false; btn.textContent = '投稿する'; return;
