@@ -15,10 +15,10 @@
     .login-card label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
     .login-card input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 12px; font-family: inherit; }
     .login-card input:focus { outline: none; border-color: #1a1a1a; }
-    .login-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 700; background: #1a1a1a; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
+    .login-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 700; background: #8f0000; color: #fff; border: none; border-radius: 10px; cursor: pointer; }
     .login-error { font-size: 13px; color: #c0392b; margin-top: 8px; display: none; }
     .admin-ui { display: none; }
-    header { background: #fff; border-bottom: 1px solid #e8e6e0; padding: 0 1.5rem; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+    header { background: #fff; border-bottom: 3px solid #8f0000; padding: 0.5rem 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; min-height: 56px; }
     .logo { font-size: 16px; font-weight: 700; color: #1a1a1a; display: flex; align-items: center; gap: 8px; }
     .admin-badge { font-size: 11px; padding: 2px 8px; background: #1a1a1a; color: #fff; border-radius: 999px; }
     .logout-btn { font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
@@ -114,7 +114,7 @@
 <div class="login-wrap" id="login-wrap">
   <div class="login-card">
     <h1>🔐 管理者ログイン</h1>
-    <p>ワセメシ管理者専用ページです</p>
+    <p>ワセメシサーチ管理者専用ページです</p>
     <label>パスワード</label>
     <input type="password" id="pw-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter')login()">
     <button class="login-btn" onclick="login()">ログイン</button>
@@ -124,7 +124,7 @@
 
 <div class="admin-ui" id="admin-ui">
   <header>
-    <div class="logo">ワセメシ管理 <span class="admin-badge">Admin</span></div>
+    <div class="logo">ワセメシサーチ管理 <span class="admin-badge">Admin</span></div>
     <button class="logout-btn" onclick="logout()">ログアウト</button>
   </header>
   <main>
@@ -172,7 +172,8 @@
       <div class="form-group">
         <label>ジャンル</label>
         <select id="edit-genre">
-          <option>ラーメン</option><option>定食・ごはん</option><option>カフェ</option>
+          <option>ラーメン</option>
+          <option>油そば</option><option>定食・ごはん</option><option>カフェ</option>
           <option>居酒屋・バー</option><option>カレー</option><option>寿司・和食</option>
         </select>
       </div>
