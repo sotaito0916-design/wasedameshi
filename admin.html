@@ -202,14 +202,14 @@
       <textarea id="edit-desc"></textarea>
     </div>
     <div class="form-group">
-      <label>メニュー表の画像</label>
-      <div id="edit-menu-current"></div>
-      <div class="img-upload-small" style="margin-top:8px;">
-        <input type="file" id="edit-menu-image" accept="image/*" onchange="previewEditMenu(this)">
-        📋 メニュー表を変更する（クリックまたはドラッグ）
-        <img id="edit-menu-preview" class="img-new-preview" alt="メニュープレビュー">
+      <label>メニュー表の管理</label>
+      <div style="font-size:12px;color:#888;margin-bottom:6px;">代表・公開・非公開を選択できます。代表メニュー画像がカードに表示されます。</div>
+      <div id="edit-menu-manage" class="img-manage-grid"></div>
+      <div class="img-upload-small" style="margin-top:10px;">
+        <input type="file" id="edit-menu-image" accept="image/*" multiple onchange="previewEditMenuImages(this)">
+        📋 メニュー表を追加する（複数選択可）
       </div>
-      <button type="button" onclick="clearMenuImage()" style="margin-top:8px;font-size:12px;padding:5px 12px;border-radius:8px;border:1px solid #f5c6c2;background:#fdecea;color:#a0342e;cursor:pointer;">🗑️ メニュー画像を削除</button>
+      <div id="edit-menu-new-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
     </div>
 
     <div class="form-group">
@@ -350,13 +350,10 @@
     document.getElementById('edit-close').value = s.close_time || '';
     document.getElementById('edit-image').value = '';
     document.getElementById('edit-img-new-previews').innerHTML = '';
-    document.getElementById('edit-menu-preview').style.display = 'none';
     document.getElementById('edit-menu-image').value = '';
-    const menuCurrent = document.getElementById('edit-menu-current');
-    menuCurrent.innerHTML = s.menu_image_url
-      ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
-      : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
+    document.getElementById('edit-menu-new-previews').innerHTML = '';
     await loadImgManageGrid(s.id, s.image_url);
+    await loadMenuManageGrid(s.id, s.menu_image_url);
 
     document.querySelectorAll('#modal-bg .vibe-label input').forEach(cb => { cb.checked = (s.vibe || []).includes(cb.value); });
     document.getElementById('save-msg').className = 'save-msg';
@@ -368,13 +365,10 @@
     document.getElementById('edit-img-current').innerHTML = '<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#aaa;background:#f8f7f4;border-radius:10px;">デフォルト画像（ジャンルアイコン）に設定されます</div>';
     document.getElementById('edit-image').value = '';
     document.getElementById('edit-img-new-previews').innerHTML = '';
-    document.getElementById('edit-menu-preview').style.display = 'none';
     document.getElementById('edit-menu-image').value = '';
-    const menuCurrent = document.getElementById('edit-menu-current');
-    menuCurrent.innerHTML = s.menu_image_url
-      ? `<img src="${s.menu_image_url}" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-bottom:6px;" alt="現在のメニュー">`
-      : `<div style="font-size:13px;color:#aaa;padding:8px 0;">メニュー画像なし</div>`;
+    document.getElementById('edit-menu-new-previews').innerHTML = '';
     await loadImgManageGrid(s.id, s.image_url);
+    await loadMenuManageGrid(s.id, s.menu_image_url);
   }
 
   function previewEditImage(input) {
@@ -419,17 +413,19 @@
       }
     }
 
-    let menu_image_url = document.getElementById('edit-menu-current').querySelector('img') ? document.getElementById('edit-menu-current').querySelector('img').src : null;
-    const menuFile = document.getElementById('edit-menu-image').files[0];
-    if (menuFile) {
-      const menuExt = menuFile.name.split('.').pop();
-      const menuFileName = `menu_${Date.now()}.${menuExt}`;
-      const { data: menuUpload, error: menuError } = await client.storage.from('shop-images').upload(menuFileName, menuFile, { cacheControl: '3600', upsert: false });
-      if (!menuError) {
-        const { data: menuUrlData } = client.storage.from('shop-images').getPublicUrl(menuFileName);
-        menu_image_url = menuUrlData.publicUrl;
+    const menuFiles = Array.from(document.getElementById('edit-menu-image').files || []);
+    for (const file of menuFiles) {
+      const ext = file.name.split('.').pop();
+      const fileName = `menu_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadErr } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (!uploadErr) {
+        const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
+        await client.from('shop_menu_images').insert({ shop_id: id, image_url: urlData.publicUrl, is_primary: false, is_hidden: false });
       }
     }
+    // 代表メニュー画像をshopsテーブルにも反映
+    const { data: primaryMenu } = await client.from('shop_menu_images').select('image_url').eq('shop_id', id).eq('is_primary', true).eq('is_hidden', false).single();
+    const menu_image_url = primaryMenu?.image_url || null;
 
     const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time }).eq('id', id);
     btn.disabled = false; btn.textContent = '保存する';
@@ -505,6 +501,67 @@
   function previewEditImages(input) {
     const files = Array.from(input.files);
     const previewArea = document.getElementById('edit-img-new-previews');
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { alert(`${file.name}は5MB以下にしてください`); return; }
+      const reader = new FileReader();
+      reader.onload = e => {
+        const item = document.createElement('div');
+        item.style.cssText = 'position:relative;width:64px;height:64px;';
+        item.innerHTML = `<img src="${e.target.result}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;">`;
+        previewArea.appendChild(item);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function loadMenuManageGrid(shopId, currentMenuUrl) {
+    const grid = document.getElementById('edit-menu-manage');
+    grid.innerHTML = '<div style="font-size:12px;color:#aaa;">読み込み中...</div>';
+    const { data: imgs } = await client.from('shop_menu_images').select('*').eq('shop_id', shopId).order('uploaded_at', { ascending: true });
+    const images = imgs || [];
+
+    if (!images.length) {
+      grid.innerHTML = currentMenuUrl
+        ? `<div class="img-manage-item"><img src="${currentMenuUrl}" style="border:2px solid #1a7a4a;"><div class="img-badge" style="background:#1a7a4a;color:#fff;">代表</div><div style="font-size:10px;color:#aaa;margin-top:2px;text-align:center;">（旧形式）</div></div>`
+        : '<div style="font-size:12px;color:#aaa;">メニュー表がありません</div>';
+      return;
+    }
+
+    grid.innerHTML = images.map(img => {
+      const isPrimary = img.is_primary;
+      const isHidden = img.is_hidden;
+      return `<div class="img-manage-item" id="menuitem-${img.id}">
+        <img src="${img.image_url}" style="border:2px solid ${isPrimary?'#1a7a4a':isHidden?'#e8e6e0':'#e8e6e0'};opacity:${isHidden?'0.4':'1'};">
+        <div class="img-badge" style="background:${isPrimary?'#1a7a4a':isHidden?'#888':'#4a3fa8'};color:#fff;">
+          ${isPrimary?'代表':isHidden?'非公開':'公開'}
+        </div>
+        <div class="img-actions">
+          <button onclick="setMenuImgRole('${img.id}','${shopId}','primary','${img.image_url}')" style="background:#1a7a4a;color:#fff;">代表</button>
+          <button onclick="setMenuImgRole('${img.id}','${shopId}','visible','${img.image_url}')" style="background:#4a3fa8;color:#fff;">公開</button>
+          <button onclick="setMenuImgRole('${img.id}','${shopId}','hidden','${img.image_url}')" style="background:#888;color:#fff;">非公開</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function setMenuImgRole(imgId, shopId, role, url) {
+    if (role === 'primary') {
+      await client.from('shop_menu_images').update({ is_primary: false }).eq('shop_id', shopId);
+      await client.from('shop_menu_images').update({ is_primary: true, is_hidden: false }).eq('id', imgId);
+      await client.from('shops').update({ menu_image_url: url }).eq('id', shopId);
+    } else if (role === 'visible') {
+      await client.from('shop_menu_images').update({ is_primary: false, is_hidden: false }).eq('id', imgId);
+    } else {
+      await client.from('shop_menu_images').update({ is_primary: false, is_hidden: true }).eq('id', imgId);
+    }
+    const currentId = document.getElementById('edit-id').value;
+    const currentShop = allShops.find(s => s.id === currentId);
+    await loadMenuManageGrid(shopId, currentShop?.menu_image_url);
+  }
+
+  function previewEditMenuImages(input) {
+    const files = Array.from(input.files);
+    const previewArea = document.getElementById('edit-menu-new-previews');
     files.forEach(file => {
       if (file.size > 5 * 1024 * 1024) { alert(`${file.name}は5MB以下にしてください`); return; }
       const reader = new FileReader();
@@ -644,25 +701,35 @@
   }
 
   async function approveEdit(editId, shopId) {
-    const { data: edit } = await client.from('shop_edits').select('proposed_data').eq('id', editId).single();
-    if (!edit) return;
+    const { data: edit, error: fetchErr } = await client.from('shop_edits').select('proposed_data').eq('id', editId).single();
+    if (fetchErr || !edit) { alert('提案データの取得に失敗しました: ' + (fetchErr?.message || '')); return; }
     const p = edit.proposed_data;
     const updateData = {};
     if (p.name) updateData.name = p.name;
     if (p.genre) updateData.genre = p.genre;
     if (p.area) updateData.area = p.area;
-    if (p.price) updateData.price = p.price;
+    if (p.price) updateData.price = parseInt(p.price);
     if (p.vibe) updateData.vibe = p.vibe;
     if (p.description !== undefined) updateData.description = p.description;
     if (p.map_url !== undefined) updateData.map_url = p.map_url;
     if (p.open_time !== undefined) updateData.open_time = p.open_time;
     if (p.close_time !== undefined) updateData.close_time = p.close_time;
-    if (p.menu_image_url) updateData.menu_image_url = p.menu_image_url;
-    await client.from('shops').update(updateData).eq('id', shopId);
-    for (const url of (p.new_images || [])) {
-      await client.from('shop_images').insert({ shop_id: shopId, image_url: url, is_primary: false });
+
+    if (Object.keys(updateData).length > 0) {
+      const { error: updateErr } = await client.from('shops').update(updateData).eq('id', shopId);
+      if (updateErr) { alert('お店情報の更新に失敗しました: ' + updateErr.message); return; }
     }
-    await client.from('shop_edits').update({ status: 'approved' }).eq('id', editId);
+
+    for (const url of (p.new_images || [])) {
+      await client.from('shop_images').insert({ shop_id: shopId, image_url: url, is_primary: false, is_hidden: false });
+    }
+
+    if (p.menu_image_url) {
+      await client.from('shop_menu_images').insert({ shop_id: shopId, image_url: p.menu_image_url, is_primary: false, is_hidden: false });
+    }
+
+    const { error: statusErr } = await client.from('shop_edits').update({ status: 'approved' }).eq('id', editId);
+    if (statusErr) { alert('ステータス更新に失敗しました: ' + statusErr.message); return; }
     alert('承認して反映しました！');
     renderEditList();
   }
