@@ -50,6 +50,17 @@
     .card-area { font-size: 11px; color: #aaa; }
     .like-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; background: none; border: 1px solid #e8e6e0; padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: all .15s; }
     .card-hours { font-size: 12px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+    .card-images { position: relative; }
+    .card-img-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+    .card-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .edit-propose-btn { font-size: 11px; color: #4a3fa8; background: #f0eef9; border: 1px solid #d4d0f0; padding: 4px 10px; border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
+    .img-gallery-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .img-gallery-bg.open { display: flex; }
+    .img-gallery-img { max-width: 90vw; max-height: 75vh; border-radius: 12px; object-fit: contain; }
+    .img-gallery-nav { display: flex; gap: 12px; align-items: center; }
+    .img-gallery-btn { background: rgba(255,255,255,.2); color: #fff; border: none; padding: 8px 18px; border-radius: 999px; cursor: pointer; font-size: 14px; }
+    .img-gallery-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,.2); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; }
+    .img-gallery-counter { color: #fff; font-size: 13px; }
     .card-hours-none { font-size: 12px; color: #bbb; font-style: italic; margin-top: 4px; }
     .card-menu { margin-top: 10px; border-top: 1px solid #f0ede8; padding-top: 10px; }
     .card-menu-title { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
@@ -287,14 +298,20 @@
   }
 
   async function loadShops() {
-    const [shopsRes, likesRes] = await Promise.all([
+    const [shopsRes, likesRes, imagesRes] = await Promise.all([
       client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false }),
-      client.from('likes').select('shop_id')
+      client.from('likes').select('shop_id'),
+      client.from('shop_images').select('*').order('uploaded_at', { ascending: true })
     ]);
     if (shopsRes.error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
     const likeCounts = {};
     (likesRes.data || []).forEach(l => { likeCounts[l.shop_id] = (likeCounts[l.shop_id] || 0) + 1; });
-    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0 }));
+    const imagesByShop = {};
+    (imagesRes.data || []).forEach(img => {
+      if (!imagesByShop[img.shop_id]) imagesByShop[img.shop_id] = [];
+      imagesByShop[img.shop_id].push(img);
+    });
+    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0, shopImages: imagesByShop[s.id] || [] }));
     renderCards();
   }
 
@@ -353,7 +370,17 @@
       const vibes = (s.vibe || []).map(v => `<span class="tag tag-vibe">${v}</span>`).join('');
       const liked = myLikes.has(s.id);
       const likeCount = s.likeCount || 0;
-      const imgEl = s.image_url ? `<img class="card-img" src="${s.image_url}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` : `<div class="card-img-placeholder">${emoji}</div>`;
+      // 画像の優先順位: shop_imagesのprimary → shop_imagesの最初 → image_url → placeholder
+      const primaryImg = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
+      const primaryUrl = primaryImg?.image_url || s.image_url;
+      const allImgUrls = s.shopImages.length > 0
+        ? s.shopImages.map(i => i.image_url)
+        : (s.image_url ? [s.image_url] : []);
+      const imgEl = primaryUrl
+        ? `<div class="card-images"><img class="card-img" src="${primaryUrl}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` +
+          (allImgUrls.length > 1 ? `<span class="img-gallery-count" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;" onclick="openGallery(event,${JSON.stringify(allImgUrls)},0)">📷 ${allImgUrls.length}枚</span>` : '') +
+          `</div>`
+        : `<div class="card-img-placeholder">${emoji}</div>`;
       const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
       const hoursHtml = (s.open_time && s.close_time)
         ? `<div class="card-hours">🕐 ${s.open_time} 〜 ${s.close_time}</div>`
@@ -361,7 +388,12 @@
       const menuHtml = s.menu_image_url
         ? `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><img class="card-menu-img" src="${s.menu_image_url}" alt="メニュー表" onclick="openMenuModal(event,'${s.menu_image_url}')"></div>`
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
-      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div></div></div>`;
+      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div>
+      <div class="card-actions">
+        ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" onclick="openGallery(event,${JSON.stringify(allImgUrls)},0)">📷 他の写真を見る</button>` : ''}
+        <a class="edit-propose-btn" href="edit.html?id=${s.id}" onclick="event.stopPropagation()">✏️ 編集を提案する</a>
+      </div>
+      </div></div>`;
     }).join('');
   }
 
@@ -373,6 +405,22 @@
   }
 
   function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
+  let galleryImages = [], galleryIdx = 0;
+  function openGallery(e, images, idx) {
+    e.stopPropagation();
+    galleryImages = images;
+    galleryIdx = idx;
+    updateGallery();
+    document.getElementById('img-gallery-bg').classList.add('open');
+  }
+  function updateGallery() {
+    document.getElementById('gallery-img').src = galleryImages[galleryIdx];
+    document.getElementById('gallery-counter').textContent = `${galleryIdx+1} / ${galleryImages.length}`;
+  }
+  function galleryPrev() { galleryIdx = (galleryIdx - 1 + galleryImages.length) % galleryImages.length; updateGallery(); }
+  function galleryNext() { galleryIdx = (galleryIdx + 1) % galleryImages.length; updateGallery(); }
+  function closeGallery() { document.getElementById('img-gallery-bg').classList.remove('open'); }
+
   function openMenuModal(e, url) { e.stopPropagation(); document.getElementById('menu-modal-img').src = url; document.getElementById('menu-modal-bg').classList.add('open'); }
   function closeMenuModal() { document.getElementById('menu-modal-bg').classList.remove('open'); }
   document.querySelectorAll('.area-tab').forEach(btn => {
@@ -391,6 +439,15 @@
 
   initAuth().then(loadShops);
 </script>
+<div class="img-gallery-bg" id="img-gallery-bg" onclick="if(event.target===this)closeGallery()">
+  <button class="img-gallery-close" onclick="closeGallery()">✕</button>
+  <img class="img-gallery-img" id="gallery-img" alt="画像">
+  <div class="img-gallery-nav">
+    <button class="img-gallery-btn" onclick="galleryPrev()">←</button>
+    <span class="img-gallery-counter" id="gallery-counter"></span>
+    <button class="img-gallery-btn" onclick="galleryNext()">→</button>
+  </div>
+</div>
 <div class="menu-modal-bg" id="menu-modal-bg" onclick="closeMenuModal()">
   <img class="menu-modal-img" id="menu-modal-img" alt="メニュー拡大">
 </div>
