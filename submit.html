@@ -229,8 +229,6 @@
     const open_time = document.getElementById('f-open').value || null;
     const close_time = document.getElementById('f-close').value || null;
     const vibe = [...document.querySelectorAll('.vibe-label input:checked')].map(c => c.value);
-    const imageFile = document.getElementById('f-image').files[0];
-
     document.getElementById('error-msg').style.display = 'none';
     if (!name) { showError('店名を入力してください'); return; }
     if (!genre) { showError('ジャンルを選んでください'); return; }
