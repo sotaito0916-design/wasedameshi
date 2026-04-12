@@ -50,7 +50,7 @@
     .card-area { font-size: 11px; color: #aaa; }
     .like-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; background: none; border: 1px solid #e8e6e0; padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: all .15s; }
     .card-hours { font-size: 12px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-    .card-images { position: relative; }
+    .card-images { position: relative; overflow: hidden; }
     .card-img-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
     .card-actions { display: flex; gap: 6px; margin-top: 8px; }
     .edit-propose-btn { font-size: 11px; color: #4a3fa8; background: #f0eef9; border: 1px solid #d4d0f0; padding: 4px 10px; border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
@@ -301,7 +301,7 @@
     const [shopsRes, likesRes, imagesRes] = await Promise.all([
       client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false }),
       client.from('likes').select('shop_id'),
-      client.from('shop_images').select('*').order('uploaded_at', { ascending: true })
+      client.from('shop_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true })
     ]);
     if (shopsRes.error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
     const likeCounts = {};
@@ -376,9 +376,10 @@
       const allImgUrls = s.shopImages.length > 0
         ? s.shopImages.map(i => i.image_url)
         : (s.image_url ? [s.image_url] : []);
+      const imagesJson = encodeURIComponent(JSON.stringify(allImgUrls));
       const imgEl = primaryUrl
-        ? `<div class="card-images"><img class="card-img" src="${primaryUrl}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` +
-          (allImgUrls.length > 1 ? `<span class="img-gallery-count" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;" onclick="openGallery(event,${JSON.stringify(allImgUrls)},0)">📷 ${allImgUrls.length}枚</span>` : '') +
+        ? `<div class="card-images" style="position:relative;"><img class="card-img" src="${primaryUrl}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` +
+          (allImgUrls.length > 1 ? `<span class="img-gallery-count" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;" onclick="event.stopPropagation();openGalleryFromEncoded(this);" data-images="${imagesJson}" data-idx="0">📷 ${allImgUrls.length}枚</span>` : '') +
           `</div>`
         : `<div class="card-img-placeholder">${emoji}</div>`;
       const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
@@ -390,7 +391,7 @@
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
       return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div>
       <div class="card-actions">
-        ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" onclick="openGallery(event,${JSON.stringify(allImgUrls)},0)">📷 他の写真を見る</button>` : ''}
+        ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" data-images="${imagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">📷 他の写真を見る</button>` : ''}
         <a class="edit-propose-btn" href="edit.html?id=${s.id}" onclick="event.stopPropagation()">✏️ 編集を提案する</a>
       </div>
       </div></div>`;
@@ -406,6 +407,14 @@
 
   function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
   let galleryImages = [], galleryIdx = 0;
+  function openGalleryFromEncoded(el) {
+    const images = JSON.parse(decodeURIComponent(el.dataset.images));
+    const idx = parseInt(el.dataset.idx) || 0;
+    galleryImages = images;
+    galleryIdx = idx;
+    updateGallery();
+    document.getElementById('img-gallery-bg').classList.add('open');
+  }
   function openGallery(e, images, idx) {
     e.stopPropagation();
     galleryImages = images;
