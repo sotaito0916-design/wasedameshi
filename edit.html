@@ -147,6 +147,18 @@
         <input type="url" id="f-map" placeholder="変更後のURL">
       </div>
 
+      <div class="form-group">
+        <label>メニュー表の写真を更新（任意）</label>
+        <div class="current-label">現在のメニュー表</div>
+        <div id="cur-menu-img" style="margin-bottom:8px;"></div>
+        <div class="img-upload" id="menu-upload-area">
+          <input type="file" id="f-menu" accept="image/*" onchange="previewMenu(this)">
+          <div style="font-size:20px;margin-bottom:4px;">📋</div>
+          <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>してメニュー表を追加</div>
+        </div>
+        <img id="menu-preview" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;margin-top:8px;display:none;" alt="メニュープレビュー">
+      </div>
+
       <hr class="divider">
 
       <div class="form-group">
@@ -206,6 +218,10 @@
     document.getElementById('cur-desc').textContent = data.description || 'なし';
     document.getElementById('cur-map').textContent = data.map_url || 'なし';
 
+    const menuImgEl = document.getElementById('cur-menu-img');
+    menuImgEl.innerHTML = data.menu_image_url
+      ? `<img src="${data.menu_image_url}" style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;" alt="現在のメニュー表">`
+      : `<div style="font-size:13px;color:#aaa;">メニュー表なし</div>`;
     document.getElementById('f-name').value = data.name;
     document.getElementById('f-price').value = data.price || '';
     document.getElementById('f-desc').value = data.description || '';
@@ -218,6 +234,18 @@
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('main-content').style.display = 'block';
+  }
+
+  function previewMenu(input) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert('5MB以下にしてください'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const prev = document.getElementById('menu-preview');
+      prev.src = e.target.result; prev.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
   }
 
   function previewImages(input) {
@@ -274,8 +302,20 @@
       }
     }
 
+    let menu_image_url = currentShop.menu_image_url || null;
+    const menuFile = document.getElementById('f-menu').files[0];
+    if (menuFile) {
+      const menuExt = menuFile.name.split('.').pop();
+      const menuFileName = `menu_edit_${Date.now()}.${menuExt}`;
+      const { error: menuErr } = await client.storage.from('shop-images').upload(menuFileName, menuFile, { cacheControl: '3600', upsert: false });
+      if (!menuErr) {
+        const { data: menuUrl } = client.storage.from('shop-images').getPublicUrl(menuFileName);
+        menu_image_url = menuUrl.publicUrl;
+      }
+    }
+
     const { data: { user } } = await client.auth.getUser();
-    const proposed_data = { name, genre, area, price, vibe, description: desc, map_url: map, open_time, close_time, new_images: uploadedUrls, reason };
+    const proposed_data = { name, genre, area, price, vibe, description: desc, map_url: map, open_time, close_time, menu_image_url, new_images: uploadedUrls, reason };
 
     const { error } = await client.from('shop_edits').insert({ shop_id: currentShop.id, user_id: user?.id || null, proposed_data });
 
