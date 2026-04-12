@@ -298,10 +298,11 @@
   }
 
   async function loadShops() {
-    const [shopsRes, likesRes, imagesRes] = await Promise.all([
+    const [shopsRes, likesRes, imagesRes, menuImagesRes] = await Promise.all([
       client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false }),
       client.from('likes').select('shop_id'),
-      client.from('shop_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true })
+      client.from('shop_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true }),
+      client.from('shop_menu_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true })
     ]);
     if (shopsRes.error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
     const likeCounts = {};
@@ -311,7 +312,12 @@
       if (!imagesByShop[img.shop_id]) imagesByShop[img.shop_id] = [];
       imagesByShop[img.shop_id].push(img);
     });
-    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0, shopImages: imagesByShop[s.id] || [] }));
+    const menuImagesByShop = {};
+    (menuImagesRes.data || []).forEach(img => {
+      if (!menuImagesByShop[img.shop_id]) menuImagesByShop[img.shop_id] = [];
+      menuImagesByShop[img.shop_id].push(img);
+    });
+    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0, shopImages: imagesByShop[s.id] || [], menuImages: menuImagesByShop[s.id] || [] }));
     renderCards();
   }
 
@@ -386,8 +392,12 @@
       const hoursHtml = (s.open_time && s.close_time)
         ? `<div class="card-hours">🕐 ${s.open_time} 〜 ${s.close_time}</div>`
         : `<div class="card-hours-none">営業時間情報なし</div>`;
-      const menuHtml = s.menu_image_url
-        ? `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><img class="card-menu-img" src="${s.menu_image_url}" alt="メニュー表" onclick="openMenuModal(event,'${s.menu_image_url}')"></div>`
+      const primaryMenu = s.menuImages.find(i => i.is_primary) || s.menuImages[0];
+      const menuUrl = primaryMenu?.image_url || s.menu_image_url;
+      const allMenuUrls = s.menuImages.length > 0 ? s.menuImages.map(i => i.image_url) : (s.menu_image_url ? [s.menu_image_url] : []);
+      const menuImagesJson = encodeURIComponent(JSON.stringify(allMenuUrls));
+      const menuHtml = menuUrl
+        ? `<div class="card-menu"><div class="card-menu-title" style="display:flex;align-items:center;justify-content:space-between;">📋 メニュー表${allMenuUrls.length > 1 ? `<span style="font-size:11px;color:#4a3fa8;cursor:pointer;" data-images="${menuImagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">${allMenuUrls.length}枚</span>` : ''}</div><img class="card-menu-img" src="${menuUrl}" alt="メニュー表" onclick="openMenuModal(event,'${menuUrl}')"></div>`
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
       return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div>
       <div class="card-actions">
