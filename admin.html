@@ -5,27 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理者画面 — ワセメシ</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  function openRejectModal(id) {
-    document.getElementById('reject-shop-id').value = id;
-    document.getElementById('reject-reason').value = '';
-    document.getElementById('reject-modal-bg').classList.add('open');
-  }
-  function closeRejectModal() {
-    document.getElementById('reject-modal-bg').classList.remove('open');
-  }
-  async function confirmReject() {
-    const id = document.getElementById('reject-shop-id').value;
-    const reason = document.getElementById('reject-reason').value.trim();
-    const { error } = await client.from('shops').update({ status: 'rejected', rejection_reason: reason || null }).eq('id', id);
-    if (error) { alert('更新に失敗しました'); return; }
-    const shop = allShops.find(s => s.id === id);
-    if (shop) { shop.status = 'rejected'; shop.rejection_reason = reason; }
-    closeRejectModal();
-    updateStats();
-    renderList();
-  }
-</script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
@@ -269,7 +248,7 @@
     else { document.getElementById('login-error').style.display = 'block'; document.getElementById('pw-input').value = ''; }
   }
   function logout() { sessionStorage.removeItem('waseda_admin'); document.getElementById('admin-ui').style.display = 'none'; document.getElementById('login-wrap').style.display = 'flex'; document.getElementById('pw-input').value = ''; }
-  function showAdmin() { document.getElementById('login-wrap').style.display = 'none'; document.getElementById('admin-ui').style.display = 'block'; loadShops(); }
+  async function showAdmin() { document.getElementById('login-wrap').style.display = 'none'; document.getElementById('admin-ui').style.display = 'block'; loadShops(); }
   if (sessionStorage.getItem('waseda_admin') === '1') showAdmin();
 
   async function loadShops() {
@@ -285,7 +264,7 @@
     document.getElementById('s-rejected').textContent = allShops.filter(s => s.status === 'rejected').length;
   }
 
-  function switchTab(tab) {
+  async function switchTab(tab) {
     currentTab = tab;
     document.querySelectorAll('.tab').forEach((b, i) => b.classList.toggle('active', ['pending','approved','rejected','users'][i] === tab));
     if (tab === 'users') loadUsers();
@@ -326,7 +305,7 @@
     alert('ユーザー名を変更しました');
   }
 
-  function renderList() {
+  async function renderList() {
     if (currentTab === 'users') { renderUserList(); return; }
     if (currentTab === 'edits') { renderEditList(); return; }
     const filtered = allShops.filter(s => s.status === currentTab);
@@ -384,7 +363,7 @@
     document.getElementById('modal-bg').classList.add('open');
   }
 
-  function clearImage() {
+  async function clearImage() {
     document.getElementById('edit-current-image').value = '';
     document.getElementById('edit-img-current').innerHTML = '<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#aaa;background:#f8f7f4;border-radius:10px;">デフォルト画像（ジャンルアイコン）に設定されます</div>';
     document.getElementById('edit-image').value = '';
