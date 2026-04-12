@@ -275,9 +275,12 @@
     const originalData = { name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, saved_at: new Date().toISOString() };
     const { data: insertedShop, error } = await client.from('shops').insert({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time, status: 'pending', user_id: user?.id || null, original_data: originalData }).select().single();
 
-    if (!error && insertedShop && uploadedImageUrls.length > 0) {
+    if (!error && insertedShop) {
       for (let i = 0; i < uploadedImageUrls.length; i++) {
-        await client.from('shop_images').insert({ shop_id: insertedShop.id, image_url: uploadedImageUrls[i], is_primary: i === 0 });
+        await client.from('shop_images').insert({ shop_id: insertedShop.id, image_url: uploadedImageUrls[i], is_primary: i === 0, is_hidden: false });
+      }
+      if (menu_image_url) {
+        await client.from('shop_menu_images').insert({ shop_id: insertedShop.id, image_url: menu_image_url, is_primary: true, is_hidden: false });
       }
     }
     if (error) {
