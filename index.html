@@ -399,10 +399,11 @@
       const menuHtml = menuUrl
         ? `<div class="card-menu"><div class="card-menu-title" style="display:flex;align-items:center;justify-content:space-between;">📋 メニュー表${allMenuUrls.length > 1 ? `<span style="font-size:11px;color:#4a3fa8;cursor:pointer;" data-images="${menuImagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">${allMenuUrls.length}枚</span>` : ''}</div><img class="card-menu-img" src="${menuUrl}" alt="メニュー表" onclick="openMenuModal(event,'${menuUrl}')"></div>`
         : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
-      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span><button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button></div>
+      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span></div>
       <div class="card-actions">
         ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" data-images="${imagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">📷 他の写真を見る</button>` : ''}
         <a class="edit-propose-btn" href="edit.html?id=${s.id}" onclick="event.stopPropagation()">✏️ 編集を提案する</a>
+        <button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')" style="margin-left:auto;">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button>
       </div>
       </div></div>`;
     }).join('');
