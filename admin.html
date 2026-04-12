@@ -425,7 +425,8 @@
     }
     // 代表メニュー画像をshopsテーブルにも反映
     const { data: primaryMenu } = await client.from('shop_menu_images').select('image_url').eq('shop_id', id).eq('is_primary', true).eq('is_hidden', false).single();
-    const menu_image_url = primaryMenu?.image_url || null;
+    const { data: currentShopData } = await client.from('shops').select('menu_image_url').eq('id', id).single();
+    const menu_image_url = primaryMenu?.image_url || currentShopData?.menu_image_url || null;
 
     const { error } = await client.from('shops').update({ name, genre, area, price, vibe, description: desc, map_url: map, image_url, menu_image_url, open_time, close_time }).eq('id', id);
     btn.disabled = false; btn.textContent = '保存する';
