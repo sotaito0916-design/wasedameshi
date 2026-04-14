@@ -24,10 +24,18 @@
     .area-tab.active { background: #8f0000; color: #fff; border-color: #8f0000; }
     .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .filter-row select { font-size: 13px; padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
-    .budget-wrap { display: flex; align-items: center; gap: 8px; }
+    .budget-wrap { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     .budget-wrap label { font-size: 12px; color: #666; white-space: nowrap; }
     .budget-wrap input[type=range] { width: 120px; cursor: pointer; }
+    @media (max-width: 640px) {
+      .filter-row { gap: 8px; }
+      .budget-wrap { min-width: calc(50% - 8px); }
+      .budget-wrap input[type=range] { width: 80px; }
+    }
     .budget-label { font-size: 13px; font-weight: 600; min-width: 60px; }
+    .filter-item { display: flex; align-items: center; gap: 6px; }
+    .filter-item label { font-size: 12px; color: #666; white-space: nowrap; }
+    .filter-item select { font-size: 13px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
     main { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; }
     .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
     .results-count strong { color: #8f0000; }
@@ -101,8 +109,9 @@
 
     @media (max-width: 480px) {
       .cards { grid-template-columns: 1fr; }
-      .filter-row { gap: 6px; }
-      .budget-wrap input[type=range] { width: 90px; }
+      .filter-row { gap: 8px; }
+      .budget-wrap input[type=range] { width: 80px; }
+      .filter-item { min-width: calc(50% - 8px); }
       header { padding: 0.4rem 0.75rem; }
       .logo { font-size: 15px; }
       .header-link { font-size: 11px; padding: 4px 10px; }
@@ -132,8 +141,12 @@
     <select id="genre">
       <option value="">すべてのジャンル</option>
       <option>ラーメン</option>
-          <option>油そば</option><option>定食・ごはん</option><option>カフェ</option>
-      <option>居酒屋・バー</option><option>カレー</option><option>寿司・和食</option>
+      <option>油そば</option>
+      <option>定食・ごはん</option>
+      <option>カフェ</option>
+      <option>居酒屋・バー</option>
+      <option>カレー</option>
+      <option>寿司・和食</option>
     </select>
     <select id="vibe">
       <option value="">すべての雰囲気</option>
@@ -142,34 +155,39 @@
       <option value="デート">デートにおすすめ</option>
       <option value="勉強">勉強・作業できる</option>
       <option value="深夜">深夜営業あり</option>
-    </select></div>
-    <div class="budget-wrap">
+    </select>
+    <div class="filter-item">
       <label>予算上限</label>
       <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
       <span class="budget-label" id="budget-label">〜¥3,000</span>
     </div>
-    <div style="display:flex;align-items:center;gap:6px;"><label style="font-size:12px;color:#666;white-space:nowrap;">並び順</label><select id="sort-order" onchange="renderCards()" style="font-size:13px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
-      <option value="random">ランダム</option>
-      <option value="price_asc">価格が安い順</option>
-      <option value="price_desc">価格が高い順</option>
-      <option value="close_late">閉店時間が遅い順</option>
-      <option value="close_early">閉店時間が早い順</option>
-    </select></div>
-    <div class="budget-wrap" style="align-items:center;gap:6px;">
-      <label>営業時間</label>
-      <select id="close-filter-select" onchange="onSelectChange(this)" style="font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
-        <option value="">すべての時間帯</option>
-        <option value="21:00">21時以降も営業</option>
-        <option value="22:00">22時以降も営業</option>
-        <option value="23:00">23時以降も営業</option>
-        <option value="00:00">深夜0時以降も営業</option>
-        <option value="01:00">深夜1時以降も営業</option>
-        <option value="custom">手動入力</option>
+    <div class="filter-item">
+      <label>並び順</label>
+      <select id="sort-order" onchange="renderCards()">
+        <option value="random">ランダム</option>
+        <option value="price_asc">価格が安い順</option>
+        <option value="price_desc">価格が高い順</option>
+        <option value="close_late">閉店時間が遅い順</option>
+        <option value="close_early">閉店時間が早い順</option>
       </select>
-      <span id="close-filter-custom-wrap" style="display:none;align-items:center;gap:4px;">
-        <input type="time" id="close-filter-custom" style="font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;width:110px;" oninput="renderCards()">
-        <span id="close-filter-label" style="font-size:13px;color:#666;white-space:nowrap;">以降も営業</span>
-      </span>
+    </div>
+    <div class="filter-item">
+      <label>営業時間</label>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <select id="close-filter-select" onchange="onSelectChange(this)">
+          <option value="">すべての時間帯</option>
+          <option value="21:00">21時以降も営業</option>
+          <option value="22:00">22時以降も営業</option>
+          <option value="23:00">23時以降も営業</option>
+          <option value="00:00">深夜0時以降も営業</option>
+          <option value="01:00">深夜1時以降も営業</option>
+          <option value="custom">手動入力</option>
+        </select>
+        <span id="close-filter-custom-wrap" style="display:none;align-items:center;gap:4px;">
+          <input type="time" id="close-filter-custom" style="font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;width:110px;" oninput="renderCards()">
+          <span style="font-size:13px;color:#666;white-space:nowrap;">以降も営業</span>
+        </span>
+      </div>
     </div>
   </div>
 </div>
