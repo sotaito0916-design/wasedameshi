@@ -3,502 +3,266 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ワセメシ — 早稲田周辺グルメ検索</title>
+  <title>写真を投稿する — ワセメシサーチ</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif; background: #f8f7f4; color: #1a1a1a; min-height: 100vh; }
-    header { background: #fff; border-bottom: 3px solid #8f0000; padding: 0.5rem 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; position: sticky; top: 0; z-index: 10; min-height: 56px; }
-    .logo { font-size: 17px; font-weight: 700; color: #1a1a1a; text-decoration: none; letter-spacing: -0.5px; white-space: nowrap; }
+    header { background: #fff; border-bottom: 3px solid #8f0000; padding: 0.5rem 1rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; min-height: 56px; }
+    .logo { font-size: 16px; font-weight: 700; color: #1a1a1a; text-decoration: none; white-space: nowrap; }
     .logo span { color: #8f0000; }
-    .header-right { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .header-link { font-size: 12px; color: #666; text-decoration: none; background: #f0ede8; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
-    .header-link:hover { background: #e8e5e0; }
-    .login-btn { font-size: 12px; color: #1a1a1a; background: none; border: 1px solid #ddd; padding: 5px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
-    .user-info { font-size: 12px; color: #888; display: flex; align-items: center; gap: 8px; }
-    .user-name { font-weight: 600; color: #1a1a1a; }
-    .logout-link { font-size: 12px; color: #aaa; cursor: pointer; text-decoration: underline; }
-    .filters-wrap { background: #fff8f8; border-bottom: 1px solid #d4a0a0; padding: 1rem 1.5rem; }
-    .area-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-    .area-tab { font-size: 12px; padding: 5px 14px; border-radius: 999px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #666; transition: all .15s; }
-    .area-tab.active { background: #8f0000; color: #fff; border-color: #8f0000; }
-    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .filter-row select { font-size: 13px; padding: 7px 12px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
-    .budget-wrap { display: flex; align-items: center; gap: 8px; }
-    .budget-wrap label { font-size: 12px; color: #666; white-space: nowrap; }
-    .budget-wrap input[type=range] { width: 120px; cursor: pointer; }
-    .budget-label { font-size: 13px; font-weight: 600; min-width: 60px; }
-    main { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; }
-    .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
-    .results-count strong { color: #8f0000; }
-    .ad-wrap { text-align: center; margin-bottom: 1.25rem; width: 100%; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; }
-    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 14px; overflow: hidden; cursor: pointer; transition: box-shadow .15s, transform .1s; }
-    .card:hover { box-shadow: 0 2px 12px rgba(143,0,0,.12); transform: translateY(-1px); }
-    .card-img { width: 100%; height: 160px; object-fit: cover; display: block; }
-    .card-img-placeholder { width: 100%; height: 160px; display: flex; align-items: center; justify-content: center; font-size: 52px; background: #f8f7f4; }
-    .card-body { padding: 1rem 1.1rem; }
-    .card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
-    .card-name { font-size: 15px; font-weight: 600; }
-    .card-price { font-size: 13px; color: #888; white-space: nowrap; }
-    .tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
-    .tag { font-size: 11px; padding: 2px 9px; border-radius: 999px; font-weight: 500; }
-    .tag-genre { background: #fdecea; color: #8f0000; border: 1px solid #d4a0a0; }
-    .tag-vibe { background: #e4f5ee; color: #1a6e4a; }
-    .card-desc { font-size: 13px; color: #666; line-height: 1.55; margin-bottom: 8px; }
-    .card-footer { display: flex; align-items: center; justify-content: space-between; }
-    .card-area { font-size: 11px; color: #aaa; }
-    .like-btn { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #aaa; background: none; border: 1px solid #e8e6e0; padding: 4px 10px; border-radius: 999px; cursor: pointer; transition: all .15s; }
-    .card-hours { font-size: 12px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-    .card-images { position: relative; overflow: hidden; }
-    .card-img-count { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.55); color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
-    .card-actions { display: flex; gap: 6px; margin-top: 8px; }
-    .edit-propose-btn { font-size: 11px; color: #8f0000; background: #f9f0f0; border: 1px solid #d4a0a0; padding: 4px 10px; border-radius: 999px; cursor: pointer; text-decoration: none; white-space: nowrap; }
-    .img-gallery-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.9); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
-    .img-gallery-bg.open { display: flex; }
-    .img-gallery-img { max-width: 90vw; max-height: 75vh; border-radius: 12px; object-fit: contain; }
-    .img-gallery-nav { display: flex; gap: 12px; align-items: center; }
-    .img-gallery-btn { background: rgba(255,255,255,.2); color: #fff; border: none; padding: 8px 18px; border-radius: 999px; cursor: pointer; font-size: 14px; }
-    .img-gallery-close { position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,.2); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 18px; }
-    .img-gallery-counter { color: #fff; font-size: 13px; }
-    .card-hours-none { font-size: 12px; color: #bbb; font-style: italic; margin-top: 4px; }
-    .card-menu { margin-top: 10px; border-top: 1px solid #f0ede8; padding-top: 10px; }
-    .card-menu-title { font-size: 11px; font-weight: 600; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .04em; }
-    .card-menu-img { width: 100%; border-radius: 8px; object-fit: cover; max-height: 180px; display: block; cursor: zoom-in; transition: opacity .15s; }
-    .card-menu-img:hover { opacity: .9; }
-    .card-menu-none { font-size: 12px; color: #bbb; font-style: italic; }
-    .menu-modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; align-items: center; justify-content: center; padding: 1rem; cursor: zoom-out; }
-    .menu-modal-bg.open { display: flex; }
-    .menu-modal-img { max-width: 100%; max-height: 90vh; border-radius: 12px; object-fit: contain; }
-    .like-btn.liked { color: #8f0000; border-color: #d4a0a0; background: #fff0f0; }
-    .loading { text-align: center; padding: 4rem; color: #888; font-size: 14px; }
-    .empty { text-align: center; padding: 4rem 2rem; color: #888; font-size: 14px; line-height: 1.8; }
-    .error { text-align: center; padding: 2rem; color: #c0392b; font-size: 13px; background: #fdecea; border-radius: 10px; }
+    .header-link { font-size: 12px; color: #666; text-decoration: none; white-space: nowrap; }
+    .container { max-width: 560px; margin: 2rem auto; padding: 0 1rem 4rem; }
+    h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .shop-name { font-size: 16px; color: #8f0000; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { font-size: 14px; color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+    .notice { background: #fff8f8; border: 1px solid #d4a0a0; border-radius: 10px; padding: 12px 14px; font-size: 13px; color: #8f0000; margin-bottom: 1.5rem; line-height: 1.6; }
+    .card { background: #fff; border: 1px solid #e8e6e0; border-radius: 16px; padding: 1.5rem; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
+    .hint { font-size: 12px; color: #aaa; margin-top: 5px; line-height: 1.6; }
 
+    /* タブ */
+    .type-tabs { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+    .type-tab { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border-radius: 10px; border: 1.5px solid #ddd; background: transparent; cursor: pointer; color: #666; transition: all .15s; text-align: center; }
+    .type-tab.active { background: #8f0000; color: #fff; border-color: #8f0000; }
 
+    /* 画像アップロード */
+    .img-upload { border: 2px dashed #d4a0a0; border-radius: 12px; padding: 1.5rem; text-align: center; cursor: pointer; position: relative; transition: border-color .15s; background: #fff8f8; }
+    .img-upload:hover { border-color: #8f0000; }
+    .img-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .img-upload-icon { font-size: 36px; margin-bottom: 8px; }
+    .img-upload-text { font-size: 13px; color: #888; }
+    .img-upload-text strong { color: #1a1a1a; }
+    .img-preview-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .img-preview-item { position: relative; width: 80px; height: 80px; }
+    .img-preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .img-preview-item .remove-btn { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: #8f0000; color: #fff; border: none; border-radius: 50%; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
+    .img-preview-item .primary-badge { position: absolute; bottom: -6px; left: 0; right: 0; text-align: center; font-size: 9px; background: #1a7a4a; color: #fff; border-radius: 999px; padding: 1px 4px; }
 
-    /* モーダル共通 */
-    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; padding: 1rem; }
-    .modal-bg.open { display: flex; }
-    .modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 400px; max-height: 90vh; overflow-y: auto; }
-    .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
-    .modal p { font-size: 13px; color: #888; margin-bottom: 1.25rem; line-height: 1.6; }
-    .modal label { font-size: 12px; font-weight: 600; color: #555; display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
-    .modal input { width: 100%; padding: 10px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 12px; font-family: inherit; }
-    .modal input:focus { outline: none; border-color: #1a1a1a; }
-    .modal-btn { width: 100%; padding: 11px; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; cursor: pointer; margin-bottom: 8px; }
-    .modal-btn-primary { background: #1a1a1a; color: #fff; }
-    .modal-btn-secondary { background: #f0ede8; color: #1a1a1a; }
-    .modal-close { width: 100%; padding: 8px; font-size: 13px; color: #888; background: none; border: none; cursor: pointer; }
-    .modal-msg { font-size: 13px; margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; display: none; }
-    .modal-msg.success { background: #e4f5ee; color: #1a6e4a; display: block; }
-    .modal-msg.error { background: #fdecea; color: #a0342e; display: block; }
-    .modal-tabs { display: flex; gap: 6px; margin-bottom: 1.25rem; }
-    .modal-tab { flex: 1; padding: 8px; font-size: 13px; border-radius: 8px; border: 1px solid #ddd; background: transparent; cursor: pointer; color: #666; transition: all .15s; }
-    .modal-tab.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .copyright-notice { background: #fff3e8; border: 1px solid #f5d5b0; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #a84f00; margin-top: 10px; line-height: 1.7; }
 
-    @media (max-width: 480px) {
-      .cards { grid-template-columns: 1fr; }
-      .filter-row { gap: 6px; }
-      .budget-wrap input[type=range] { width: 90px; }
-      header { padding: 0.4rem 0.75rem; }
-      .logo { font-size: 15px; }
-      .header-link { font-size: 11px; padding: 4px 10px; }
-      .login-btn { font-size: 11px; padding: 4px 10px; }
-      .user-info { font-size: 11px; }
-    }
+    .submit-btn { width: 100%; padding: 13px; font-size: 15px; font-weight: 700; background: #8f0000; color: #fff; border: none; border-radius: 12px; cursor: pointer; margin-top: 8px; transition: opacity .15s; }
+    .submit-btn:hover { opacity: .85; }
+    .submit-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .error-msg { background: #fdecea; border: 1px solid #f5c6c2; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #c0392b; margin-top: 10px; display: none; }
+    .progress { font-size: 13px; color: #888; margin-top: 8px; display: none; text-align: center; }
+
+    .success { display: none; text-align: center; padding: 3rem 2rem; }
+    .success-icon { font-size: 48px; margin-bottom: 1rem; }
+    .success h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .success p { font-size: 14px; color: #888; line-height: 1.7; }
+    .back-link { display: inline-block; margin-top: 1.5rem; font-size: 14px; color: #8f0000; text-decoration: none; font-weight: 600; }
+
+    .loading { text-align: center; padding: 4rem; color: #888; }
   </style>
 </head>
 <body>
 <header>
   <a class="logo" href="index.html">ワセ<span>メシ</span>サーチ</a>
-  <div class="header-right">
-    <div id="user-area"><button class="login-btn" onclick="openModal()">ログイン / 登録</button></div>
-    <a class="header-link" href="mypage.html">マイページ</a>
-    <a class="header-link" href="submit.html">＋ お店を登録</a>
-  </div>
+  <a class="header-link" href="index.html">← 検索に戻る</a>
 </header>
 
-<div class="filters-wrap">
-  <div class="area-tabs">
-    <button class="area-tab active" data-area="">全エリア</button>
-    <button class="area-tab" data-area="早稲田キャンパス周辺">早稲田キャンパス周辺</button>
-    <button class="area-tab" data-area="高田馬場駅周辺">高田馬場駅周辺</button>
-    <button class="area-tab" data-area="西早稲田周辺">西早稲田周辺</button>
-  </div>
-  <div class="filter-row">
-    <select id="genre">
-      <option value="">すべてのジャンル</option>
-      <option>ラーメン</option>
-          <option>油そば</option><option>定食・ごはん</option><option>カフェ</option>
-      <option>居酒屋・バー</option><option>カレー</option><option>寿司・和食</option>
-    </select>
-    <select id="vibe">
-      <option value="">すべての雰囲気</option>
-      <option value="一人OK">一人でも入りやすい</option>
-      <option value="グループ">グループ向け</option>
-      <option value="デート">デートにおすすめ</option>
-      <option value="勉強">勉強・作業できる</option>
-      <option value="深夜">深夜営業あり</option>
-    </select>
-    <div class="budget-wrap">
-      <label>予算上限</label>
-      <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
-      <span class="budget-label" id="budget-label">〜¥3,000</span>
-    </div>
-    <div class="budget-wrap" style="align-items:center;gap:6px;">
-      <label>営業時間</label>
-      <select id="close-filter-select" onchange="onSelectChange(this)" style="font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
-        <option value="">すべての時間帯</option>
-        <option value="21:00">21時以降も営業</option>
-        <option value="22:00">22時以降も営業</option>
-        <option value="23:00">23時以降も営業</option>
-        <option value="00:00">深夜0時以降も営業</option>
-        <option value="01:00">深夜1時以降も営業</option>
-        <option value="custom">手動入力</option>
-      </select>
-      <span id="close-filter-custom-wrap" style="display:none;align-items:center;gap:4px;">
-        <input type="time" id="close-filter-custom" style="font-size:13px;padding:6px 8px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;width:110px;" oninput="renderCards()">
-        <span id="close-filter-label" style="font-size:13px;color:#666;white-space:nowrap;">以降も営業</span>
-      </span>
-    </div>
-  </div>
-</div>
+<div class="container">
+  <div id="loading" class="loading">読み込み中...</div>
 
-<main>
-  <div class="ad-wrap"><!-- admax -->
-<script src="https://adm.shinobi.jp/o/bfe25dcd3202de975bfdf4a708caa7d0"></script>
-<!-- admax --></div>
+  <div id="main-content" style="display:none;">
+    <div class="shop-name" id="shop-name-display"></div>
+    <h1>写真を投稿する</h1>
+    <p class="subtitle">お店の写真やメニュー表を投稿できます。管理者が確認した後に掲載されます。</p>
 
-  <div class="results-count" id="results-count"></div>
-  <div class="cards" id="cards"><div class="loading">読み込み中...</div></div>
-</main>
+    <div class="notice">📷 投稿された写真は管理者が確認します。承認後に公開されます。</div>
 
-<!-- ログイン・登録モーダル -->
-<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <h2 id="modal-title">ログイン / 新規登録</h2>
-    <p>ユーザー名を設定してお店を投稿したり、いいねをつけられます。</p>
-    <div class="modal-tabs">
-      <button class="modal-tab active" onclick="switchModalTab('login')">ログイン</button>
-      <button class="modal-tab" onclick="switchModalTab('signup')">新規登録</button>
-    </div>
-    <div class="modal-msg" id="modal-msg"></div>
+    <div class="card" id="form-wrap">
+      <div class="type-tabs">
+        <button class="type-tab active" onclick="switchType('shop')" id="tab-shop">🏠 お店の写真</button>
+        <button class="type-tab" onclick="switchType('menu')" id="tab-menu">📋 メニュー表</button>
+      </div>
 
-    <div class="tab-content active" id="tab-login">
-      <label>メールアドレス</label>
-      <input type="email" id="login-email" placeholder="example@email.com">
-      <label>パスワード</label>
-      <input type="password" id="login-pw" placeholder="パスワード" onkeydown="if(event.key==='Enter')handleLogin()">
-      <button class="modal-btn modal-btn-primary" onclick="handleLogin()">ログイン</button>
+      <div id="type-shop">
+        <div class="form-group">
+          <label>お店の写真（複数可）</label>
+          <div class="img-upload">
+            <input type="file" id="f-shop-images" accept="image/*" multiple onchange="previewImages(this, 'shop-preview')">
+            <div class="img-upload-icon">🏠</div>
+            <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>して写真を追加<br>複数選択可・各5MB以下</div>
+          </div>
+          <div class="img-preview-list" id="shop-preview"></div>
+          <p class="hint">外観・内装・料理など、お店の雰囲気が伝わる写真をお願いします。</p>
+        </div>
+      </div>
+
+      <div id="type-menu" style="display:none;">
+        <div class="form-group">
+          <label>メニュー表の写真（複数可）</label>
+          <div class="img-upload">
+            <input type="file" id="f-menu-images" accept="image/*" multiple onchange="previewImages(this, 'menu-preview')">
+            <div class="img-upload-icon">📋</div>
+            <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>してメニュー表を追加<br>複数選択可・各5MB以下</div>
+          </div>
+          <div class="img-preview-list" id="menu-preview"></div>
+          <p class="hint">メニュー全体が見えるように撮影してください。</p>
+        </div>
+      </div>
+
+      <div class="copyright-notice">
+        📷 <strong>必ず自分で撮影した写真を使用してください。</strong><br>
+        インターネット上の画像・他サイトの写真の転載は著作権法違反となります。<br>
+        著作権違反が判明した場合、画像は削除されます。
+      </div>
+
+      <div class="form-group" style="margin-top:16px;">
+        <label>コメント（任意）</label>
+        <textarea id="f-comment" style="width:100%;height:70px;padding:9px 12px;font-size:14px;border:1px solid #ddd;border-radius:10px;font-family:inherit;resize:vertical;" placeholder="例：2024年11月時点のメニューです"></textarea>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+      <div class="progress" id="progress">アップロード中...</div>
+      <button class="submit-btn" id="submit-btn" onclick="submitPhotos()">投稿する</button>
     </div>
 
-    <div class="tab-content" id="tab-signup">
-      <label>メールアドレス</label>
-      <input type="email" id="signup-email" placeholder="example@email.com">
-      <label>パスワード</label>
-      <input type="password" id="signup-pw" placeholder="6文字以上">
-      <button class="modal-btn modal-btn-primary" onclick="handleSignup()">新規登録</button>
+    <div class="success" id="success-wrap">
+      <div class="success-icon">🎉</div>
+      <h2>写真を投稿しました！</h2>
+      <p>管理者が確認した後に掲載されます。<br>ご協力ありがとうございます。</p>
+      <a class="back-link" href="index.html">← 検索画面に戻る</a>
     </div>
-    <button class="modal-close" onclick="closeModal()">閉じる</button>
   </div>
 </div>
 
 <script>
   const SUPABASE_URL = 'https://wkiwwtkutsesbcmofqak.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndraXd3dGt1dHNlc2JjbW9mcWFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4OTU1NTgsImV4cCI6MjA5MTQ3MTU1OH0.eHfa9Ul9WV_Zi3YOrEHncr2Yy_MybQF40e6Bj9l1oJQ';
-  const GENRE_EMOJI = {'ラーメン':'🍜','定食・ごはん':'🍱','カフェ':'☕','居酒屋・バー':'🍻','カレー':'🍛','寿司・和食':'🍣'};
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  let allShops = [], myLikes = new Set(), currentArea = '', currentUser = null, currentProfile = null;
 
-  async function initAuth() {
-    const { data: { session } } = await client.auth.getSession();
-    currentUser = session?.user || null;
-    if (currentUser) {
-      const { data } = await client.from('profiles').select('*').eq('id', currentUser.id).single();
-      currentProfile = data;
-    }
-    updateUserArea();
-    if (currentUser) await loadMyLikes();
+  let currentShop = null;
+  let currentType = 'shop';
+  let shopFiles = [], menuFiles = [];
+
+  async function init() {
+    const params = new URLSearchParams(window.location.search);
+    const shopId = params.get('id');
+    if (!shopId) { document.getElementById('loading').textContent = 'お店が指定されていません。'; return; }
+    const { data, error } = await client.from('shops').select('id, name').eq('id', shopId).single();
+    if (error || !data) { document.getElementById('loading').textContent = 'お店が見つかりませんでした。'; return; }
+    currentShop = data;
+    document.getElementById('shop-name-display').textContent = `「${data.name}」への写真投稿`;
+    document.title = `写真を投稿 — ${data.name} — ワセメシサーチ`;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
   }
 
-  function updateUserArea() {
-    const el = document.getElementById('user-area');
-    if (currentUser && currentProfile) {
-      el.innerHTML = `<span class="user-info"><span class="user-name">${currentProfile.username}</span> <span class="logout-link" onclick="handleLogout()">ログアウト</span></span>`;
-    } else if (currentUser) {
-      el.innerHTML = `<span class="user-info"><span class="logout-link" onclick="handleLogout()">ログアウト</span></span>`;
-    } else {
-      el.innerHTML = `<button class="login-btn" onclick="openModal()">ログイン / 登録</button>`;
-    }
+  function switchType(type) {
+    currentType = type;
+    document.getElementById('type-shop').style.display = type === 'shop' ? 'block' : 'none';
+    document.getElementById('type-menu').style.display = type === 'menu' ? 'block' : 'none';
+    document.getElementById('tab-shop').classList.toggle('active', type === 'shop');
+    document.getElementById('tab-menu').classList.toggle('active', type === 'menu');
   }
 
-  function switchModalTab(tab) {
-    document.querySelectorAll('.modal-tab').forEach((b,i) => b.classList.toggle('active', (i===0&&tab==='login')||(i===1&&tab==='signup')));
-    document.getElementById('tab-login').classList.toggle('active', tab==='login');
-    document.getElementById('tab-signup').classList.toggle('active', tab==='signup');
-    document.getElementById('modal-msg').className = 'modal-msg';
-  }
-
-  async function handleLogin() {
-    const email = document.getElementById('login-email').value.trim();
-    const pw = document.getElementById('login-pw').value;
-    if (!email || !pw) { showModalMsg('入力してください', 'error'); return; }
-    const { data, error } = await client.auth.signInWithPassword({ email, password: pw });
-    if (error) { showModalMsg('ログインに失敗しました', 'error'); return; }
-    currentUser = data.user;
-    const { data: profile } = await client.from('profiles').select('*').eq('id', currentUser.id).single();
-    currentProfile = profile;
-    await loadMyLikes();
-    updateUserArea();
-    closeModal();
-    renderCards();
-  }
-
-  async function handleSignup() {
-    const email = document.getElementById('signup-email').value.trim();
-    const pw = document.getElementById('signup-pw').value;
-    if (!email || !pw) { showModalMsg('メールとパスワードを入力してください', 'error'); return; }
-    if (pw.length < 6) { showModalMsg('パスワードは6文字以上にしてください', 'error'); return; }
-    const { data, error } = await client.auth.signUp({ email, password: pw });
-    if (error) { showModalMsg('登録に失敗しました', 'error'); return; }
-    if (data.user) {
-      const { count: total } = await client.from('profiles').select('*', { count: 'exact', head: true });
-      const username = 'ワセメシ' + ((total || 0) + 1);
-      await client.from('profiles').insert({ id: data.user.id, username });
-    }
-    showModalMsg('確認メールを送信しました。メールのリンクをクリックしてください。', 'success');
-  }
-
-  async function handleLogout() {
-    await client.auth.signOut();
-    currentUser = null; currentProfile = null; myLikes = new Set();
-    updateUserArea(); renderCards();
-  }
-
-  function openModal() { document.getElementById('modal-bg').classList.add('open'); }
-  function closeModal() {
-    document.getElementById('modal-bg').classList.remove('open');
-    document.getElementById('modal-msg').className = 'modal-msg';
-  }
-  function showModalMsg(msg, type) { const el = document.getElementById('modal-msg'); el.textContent = msg; el.className = 'modal-msg ' + type; }
-
-  async function loadMyLikes() {
-    if (!currentUser) return;
-    const { data } = await client.from('likes').select('shop_id').eq('user_id', currentUser.id);
-    myLikes = new Set((data || []).map(l => l.shop_id));
-  }
-
-  async function toggleLike(e, shopId) {
-    e.stopPropagation();
-    if (!currentUser) { openModal(); return; }
-    const shop = allShops.find(s => s.id === shopId);
-    if (myLikes.has(shopId)) {
-      await client.from('likes').delete().eq('shop_id', shopId).eq('user_id', currentUser.id);
-      myLikes.delete(shopId);
-      if (shop) shop.likeCount = Math.max(0, (shop.likeCount || 0) - 1);
-    } else {
-      await client.from('likes').insert({ shop_id: shopId, user_id: currentUser.id });
-      myLikes.add(shopId);
-      if (shop) shop.likeCount = (shop.likeCount || 0) + 1;
-    }
-    renderCards();
-  }
-
-  async function loadShops() {
-    const [shopsRes, likesRes, imagesRes, menuImagesRes] = await Promise.all([
-      client.from('shops').select('*').eq('status', 'approved').order('submitted_at', { ascending: false }),
-      client.from('likes').select('shop_id'),
-      client.from('shop_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true }),
-      client.from('shop_menu_images').select('*').eq('is_hidden', false).order('uploaded_at', { ascending: true })
-    ]);
-    if (shopsRes.error) { document.getElementById('cards').innerHTML = '<div class="error">読み込みに失敗しました。</div>'; return; }
-    const likeCounts = {};
-    (likesRes.data || []).forEach(l => { likeCounts[l.shop_id] = (likeCounts[l.shop_id] || 0) + 1; });
-    const imagesByShop = {};
-    (imagesRes.data || []).forEach(img => {
-      if (!imagesByShop[img.shop_id]) imagesByShop[img.shop_id] = [];
-      imagesByShop[img.shop_id].push(img);
+  function previewImages(input, previewId) {
+    const files = Array.from(input.files);
+    const targetArr = previewId === 'shop-preview' ? shopFiles : menuFiles;
+    files.forEach(file => {
+      if (file.size > 5 * 1024 * 1024) { alert(`${file.name}は5MB以下にしてください`); return; }
+      const idx = targetArr.length;
+      targetArr.push(file);
+      const reader = new FileReader();
+      reader.onload = e => {
+        const item = document.createElement('div');
+        item.className = 'img-preview-item';
+        item.id = `${previewId}-${idx}`;
+        item.innerHTML = `<img src="${e.target.result}" alt="プレビュー">
+          <button class="remove-btn" onclick="removeImg('${previewId}',${idx})">✕</button>
+          ${idx === 0 ? '<span class="primary-badge">最初</span>' : ''}`;
+        document.getElementById(previewId).appendChild(item);
+      };
+      reader.readAsDataURL(file);
     });
-    const menuImagesByShop = {};
-    (menuImagesRes.data || []).forEach(img => {
-      if (!menuImagesByShop[img.shop_id]) menuImagesByShop[img.shop_id] = [];
-      menuImagesByShop[img.shop_id].push(img);
-    });
-    allShops = (shopsRes.data || []).map(s => ({ ...s, likeCount: likeCounts[s.id] || 0, shopImages: imagesByShop[s.id] || [], menuImages: menuImagesByShop[s.id] || [] }));
-    renderCards();
+    input.value = '';
   }
 
-  async function loadRanking() {
-    const { data, error } = await client.from('profiles').select('username, approved_count').order('approved_count', { ascending: false }).limit(5);
-    const el = document.getElementById('ranking-list');
-    if (error || !data || !data.length) { el.innerHTML = '<div style="font-size:13px;color:#aaa;">まだランキングデータがありません</div>'; return; }
-    const medals = ['🥇','🥈','🥉'];
-    el.innerHTML = data.map((p, i) => `
-      <div class="ranking-item">
-        <span class="rank-num rank-${i+1}">${medals[i] || (i+1)}</span>
-        <span class="rank-name">${p.username}</span>
-        <span class="rank-count">${p.approved_count}件承認</span>
-      </div>`).join('');
+  function removeImg(previewId, idx) {
+    const arr = previewId === 'shop-preview' ? shopFiles : menuFiles;
+    arr[idx] = null;
+    const el = document.getElementById(`${previewId}-${idx}`);
+    if (el) el.remove();
   }
 
-  function renderCards() {
-    const genre = document.getElementById('genre').value;
-    const vibe = document.getElementById('vibe').value;
-    const budget = parseInt(document.getElementById('budget').value);
-    const selectVal = document.getElementById('close-filter-select').value;
-    const closeFilter = selectVal === 'custom'
-      ? document.getElementById('close-filter-custom').value
-      : selectVal;
+  async function submitPhotos() {
+    const files = currentType === 'shop'
+      ? shopFiles.filter(f => f !== null)
+      : menuFiles.filter(f => f !== null);
 
-    const toMin = t => {
-      if (!t) return null;
-      const [h, m] = t.split(':').map(Number);
-      return h * 60 + m;
-    };
-    const isOpenUntil = (closeTime, filterTime) => {
-      if (!closeTime) return true;
-      const c = toMin(closeTime);
-      const f = toMin(filterTime);
-      const midnight = 24 * 60;
-      // 閉店が深夜帯（0:00〜5:59）の場合は+24時間として扱う
-      const cAdj = c < 360 ? c + midnight : c;
-      // 検索時刻が深夜帯の場合も+24時間
-      const fAdj = f < 360 ? f + midnight : f;
-      return cAdj >= fAdj;
+    if (!files.length) {
+      showError('写真を選択してください');
+      return;
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '送信中...';
+    document.getElementById('progress').style.display = 'block';
+    document.getElementById('error-msg').style.display = 'none';
+
+    const { data: { user } } = await client.auth.getUser();
+    const comment = document.getElementById('f-comment').value.trim();
+    const uploadedUrls = [];
+
+    for (const file of files) {
+      const ext = file.name.split('.').pop();
+      const fileName = `${currentType}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadErr } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (!uploadErr) {
+        const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
+        uploadedUrls.push(urlData.publicUrl);
+      }
+    }
+
+    if (!uploadedUrls.length) {
+      showError('アップロードに失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+      btn.textContent = '投稿する';
+      document.getElementById('progress').style.display = 'none';
+      return;
+    }
+
+    // shop_editsテーブルに写真提案として保存
+    const proposed_data = {
+      new_images: currentType === 'shop' ? uploadedUrls : [],
+      menu_image_url: currentType === 'menu' ? uploadedUrls[0] : null,
+      menu_images: currentType === 'menu' ? uploadedUrls : [],
+      reason: comment || `${currentType === 'shop' ? 'お店' : 'メニュー表'}の写真を投稿しました`,
+      photo_only: true,
+      photo_type: currentType,
     };
 
-    const filtered = allShops.filter(s => {
-      if (currentArea && s.area !== currentArea) return false;
-      if (genre && s.genre !== genre) return false;
-      if (vibe && !(s.vibe || []).includes(vibe)) return false;
-      if (s.price > budget) return false;
-      if (closeFilter && !isOpenUntil(s.close_time, closeFilter)) return false;
-      return true;
+    const { error } = await client.from('shop_edits').insert({
+      shop_id: currentShop.id,
+      user_id: user?.id || null,
+      proposed_data,
     });
-    // ランダムシャッフル
-    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-    // 写真ありを先頭2件に
-    const withPhoto = shuffled.filter(s => {
-      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
-      return primary?.image_url || s.image_url;
-    });
-    const withoutPhoto = shuffled.filter(s => {
-      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
-      return !primary?.image_url && !s.image_url;
-    });
-    const top2 = withPhoto.slice(0, 2);
-    const rest = [...withPhoto.slice(2), ...withoutPhoto].sort(() => Math.random() - 0.5);
-    const sorted = [...top2, ...rest];
 
-    document.getElementById('results-count').innerHTML = `<strong>${sorted.length}件</strong>のお店が見つかりました`;
-    const cardsEl = document.getElementById('cards');
-    if (!sorted.length) { cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>'; return; }
-    cardsEl.innerHTML = sorted.map(s => {
-      const emoji = GENRE_EMOJI[s.genre] || '🍽️';
-      const vibes = (s.vibe || []).map(v => `<span class="tag tag-vibe">${v}</span>`).join('');
-      const liked = myLikes.has(s.id);
-      const likeCount = s.likeCount || 0;
-      // 画像の優先順位: shop_imagesのprimary → shop_imagesの最初 → image_url → placeholder
-      const primaryImg = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
-      const primaryUrl = primaryImg?.image_url || s.image_url;
-      const allImgUrls = s.shopImages.length > 0
-        ? s.shopImages.map(i => i.image_url)
-        : (s.image_url ? [s.image_url] : []);
-      const imagesJson = encodeURIComponent(JSON.stringify(allImgUrls));
-      const imgEl = primaryUrl
-        ? `<div class="card-images" style="position:relative;"><img class="card-img" src="${primaryUrl}" alt="${s.name}" onerror="this.outerHTML='<div class=card-img-placeholder>${emoji}</div>'">` +
-          (allImgUrls.length > 1 ? `<span class="img-gallery-count" style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11px;padding:2px 8px;border-radius:999px;cursor:pointer;" onclick="event.stopPropagation();openGalleryFromEncoded(this);" data-images="${imagesJson}" data-idx="0">📷 ${allImgUrls.length}枚</span>` : '') +
-          `</div>`
-        : `<div class="card-img-placeholder">${emoji}</div>`;
-      const mapAttr = s.map_url ? `onclick="openMap(event,'${s.map_url}')"` : '';
-      const hoursHtml = (s.open_time && s.close_time)
-        ? `<div class="card-hours" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">
-            <span>🕐 ${s.open_time} 〜 ${s.close_time}</span>
-            <span style="font-size:10px;color:#bbb;">正確な時間はGoogleマップを参照</span>
-           </div>`
-        : `<div class="card-hours-none">営業時間情報なし</div>`;
-      const primaryMenu = s.menuImages.find(i => i.is_primary) || s.menuImages[0];
-      const menuUrl = primaryMenu?.image_url || s.menu_image_url;
-      const allMenuUrls = s.menuImages.length > 0 ? s.menuImages.map(i => i.image_url) : (s.menu_image_url ? [s.menu_image_url] : []);
-      const menuImagesJson = encodeURIComponent(JSON.stringify(allMenuUrls));
-      const menuHtml = menuUrl
-        ? `<div class="card-menu"><div class="card-menu-title" style="display:flex;align-items:center;justify-content:space-between;">📋 メニュー表${allMenuUrls.length > 1 ? `<span style="font-size:11px;color:#8f0000;cursor:pointer;" data-images="${menuImagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">${allMenuUrls.length}枚</span>` : ''}</div><img class="card-menu-img" src="${menuUrl}" alt="メニュー表" onclick="openMenuModal(event,'${menuUrl}')"></div>`
-        : `<div class="card-menu"><div class="card-menu-title">📋 メニュー表</div><div class="card-menu-none">メニュー情報なし</div></div>`;
-      return `<div class="card" ${mapAttr}>${imgEl}<div class="card-body"><div class="card-top"><span class="card-name">${s.name}</span><span class="card-price">〜¥${s.price.toLocaleString()}</span></div><div class="tags"><span class="tag tag-genre">${s.genre}</span>${vibes}</div><div class="card-desc">${s.description || ''}</div>${hoursHtml}${menuHtml}<div class="card-footer"><span class="card-area">📍 ${s.area}</span></div>
-      <div class="card-actions">
-        ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" data-images="${imagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">📷 他の写真を見る</button>` : ''}
-        <a class="edit-propose-btn" href="edit.html?id=${s.id}" onclick="event.stopPropagation()">✏️ 編集を提案する</a>
-        <a class="edit-propose-btn" href="photo.html?id=${s.id}" onclick="event.stopPropagation()">📷 写真を投稿する</a>
-        <button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')" style="margin-left:auto;">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button>
-      </div>
-      </div></div>`;
-    }).join('');
+    document.getElementById('progress').style.display = 'none';
+
+    if (error) {
+      showError('送信に失敗しました。もう一度お試しください。');
+      btn.disabled = false;
+      btn.textContent = '投稿する';
+      return;
+    }
+
+    document.getElementById('form-wrap').style.display = 'none';
+    document.getElementById('success-wrap').style.display = 'block';
   }
 
-  function onSelectChange(sel) {
-    const wrap = document.getElementById('close-filter-custom-wrap');
-    const isCustom = sel.value === 'custom';
-    wrap.style.display = isCustom ? 'flex' : 'none';
-    if (!isCustom) renderCards();
+  function showError(msg) {
+    const el = document.getElementById('error-msg');
+    el.textContent = msg;
+    el.style.display = 'block';
   }
 
-  function openMap(e, url) { e.preventDefault(); window.open(url, '_blank'); }
-  let galleryImages = [], galleryIdx = 0;
-  function openGalleryFromEncoded(el) {
-    const images = JSON.parse(decodeURIComponent(el.dataset.images));
-    const idx = parseInt(el.dataset.idx) || 0;
-    galleryImages = images;
-    galleryIdx = idx;
-    updateGallery();
-    document.getElementById('img-gallery-bg').classList.add('open');
-  }
-  function openGallery(e, images, idx) {
-    e.stopPropagation();
-    galleryImages = images;
-    galleryIdx = idx;
-    updateGallery();
-    document.getElementById('img-gallery-bg').classList.add('open');
-  }
-  function updateGallery() {
-    document.getElementById('gallery-img').src = galleryImages[galleryIdx];
-    document.getElementById('gallery-counter').textContent = `${galleryIdx+1} / ${galleryImages.length}`;
-  }
-  function galleryPrev() { galleryIdx = (galleryIdx - 1 + galleryImages.length) % galleryImages.length; updateGallery(); }
-  function galleryNext() { galleryIdx = (galleryIdx + 1) % galleryImages.length; updateGallery(); }
-  function closeGallery() { document.getElementById('img-gallery-bg').classList.remove('open'); }
-
-  function openMenuModal(e, url) { e.stopPropagation(); document.getElementById('menu-modal-img').src = url; document.getElementById('menu-modal-bg').classList.add('open'); }
-  function closeMenuModal() { document.getElementById('menu-modal-bg').classList.remove('open'); }
-  document.querySelectorAll('.area-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.area-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active'); currentArea = btn.dataset.area; renderCards();
-    });
-  });
-  document.getElementById('genre').addEventListener('change', renderCards);
-  document.getElementById('close-filter-select').addEventListener('change', renderCards);
-  document.getElementById('close-filter-custom').addEventListener('change', renderCards);
-  document.getElementById('vibe').addEventListener('change', renderCards);
-  document.getElementById('budget').addEventListener('input', e => {
-    document.getElementById('budget-label').textContent = `〜¥${parseInt(e.target.value).toLocaleString()}`; renderCards();
-  });
-
-  initAuth().then(loadShops);
+  init();
 </script>
-<div class="img-gallery-bg" id="img-gallery-bg" onclick="if(event.target===this)closeGallery()">
-  <button class="img-gallery-close" onclick="closeGallery()">✕</button>
-  <img class="img-gallery-img" id="gallery-img" alt="画像">
-  <div class="img-gallery-nav">
-    <button class="img-gallery-btn" onclick="galleryPrev()">←</button>
-    <span class="img-gallery-counter" id="gallery-counter"></span>
-    <button class="img-gallery-btn" onclick="galleryNext()">→</button>
-  </div>
-</div>
-<div class="menu-modal-bg" id="menu-modal-bg" onclick="closeMenuModal()">
-  <img class="menu-modal-img" id="menu-modal-img" alt="メニュー拡大">
-</div>
 </body>
 </html>
