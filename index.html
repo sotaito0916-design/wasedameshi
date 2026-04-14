@@ -431,6 +431,7 @@
       <div class="card-actions">
         ${allImgUrls.length > 1 ? `<button class="edit-propose-btn" data-images="${imagesJson}" data-idx="0" onclick="event.stopPropagation();openGalleryFromEncoded(this);">📷 他の写真を見る</button>` : ''}
         <a class="edit-propose-btn" href="edit.html?id=${s.id}" onclick="event.stopPropagation()">✏️ 編集を提案する</a>
+        <a class="edit-propose-btn" href="photo.html?id=${s.id}" onclick="event.stopPropagation()">📷 写真を投稿する</a>
         <button class="like-btn ${liked?'liked':''}" onclick="toggleLike(event,'${s.id}')" style="margin-left:auto;">${liked?'♥':'♡'} ${likeCount > 0 ? likeCount : 'いいね'}</button>
       </div>
       </div></div>`;
