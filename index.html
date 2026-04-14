@@ -142,19 +142,19 @@
       <option value="デート">デートにおすすめ</option>
       <option value="勉強">勉強・作業できる</option>
       <option value="深夜">深夜営業あり</option>
-    </select>
+    </select></div>
     <div class="budget-wrap">
       <label>予算上限</label>
       <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
       <span class="budget-label" id="budget-label">〜¥3,000</span>
     </div>
-    <select id="sort-order" onchange="renderCards()" style="font-size:13px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
+    <div style="display:flex;align-items:center;gap:6px;"><label style="font-size:12px;color:#666;white-space:nowrap;">並び順</label><select id="sort-order" onchange="renderCards()" style="font-size:13px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
       <option value="random">ランダム</option>
       <option value="price_asc">価格が安い順</option>
       <option value="price_desc">価格が高い順</option>
       <option value="close_late">閉店時間が遅い順</option>
       <option value="close_early">閉店時間が早い順</option>
-    </select>
+    </select></div>
     <div class="budget-wrap" style="align-items:center;gap:6px;">
       <label>営業時間</label>
       <select id="close-filter-select" onchange="onSelectChange(this)" style="font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
