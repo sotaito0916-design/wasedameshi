@@ -378,10 +378,25 @@
       if (closeFilter && !isOpenUntil(s.close_time, closeFilter)) return false;
       return true;
     });
-    document.getElementById('results-count').innerHTML = `<strong>${filtered.length}件</strong>のお店が見つかりました`;
+    // ランダムシャッフル
+    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+    // 写真ありを先頭2件に
+    const withPhoto = shuffled.filter(s => {
+      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
+      return primary?.image_url || s.image_url;
+    });
+    const withoutPhoto = shuffled.filter(s => {
+      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
+      return !primary?.image_url && !s.image_url;
+    });
+    const top2 = withPhoto.slice(0, 2);
+    const rest = [...withPhoto.slice(2), ...withoutPhoto].sort(() => Math.random() - 0.5);
+    const sorted = [...top2, ...rest];
+
+    document.getElementById('results-count').innerHTML = `<strong>${sorted.length}件</strong>のお店が見つかりました`;
     const cardsEl = document.getElementById('cards');
-    if (!filtered.length) { cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>'; return; }
-    cardsEl.innerHTML = filtered.map(s => {
+    if (!sorted.length) { cardsEl.innerHTML = '<div class="empty">条件に合うお店が見つかりませんでした。<br>絞り込みを変えてみてください。</div>'; return; }
+    cardsEl.innerHTML = sorted.map(s => {
       const emoji = GENRE_EMOJI[s.genre] || '🍽️';
       const vibes = (s.vibe || []).map(v => `<span class="tag tag-vibe">${v}</span>`).join('');
       const liked = myLikes.has(s.id);
