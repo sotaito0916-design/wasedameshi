@@ -148,6 +148,13 @@
       <input type="range" id="budget" min="500" max="3000" step="100" value="3000">
       <span class="budget-label" id="budget-label">〜¥3,000</span>
     </div>
+    <select id="sort-order" onchange="renderCards()" style="font-size:13px;padding:7px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
+      <option value="random">ランダム</option>
+      <option value="price_asc">価格が安い順</option>
+      <option value="price_desc">価格が高い順</option>
+      <option value="close_late">閉店時間が遅い順</option>
+      <option value="close_early">閉店時間が早い順</option>
+    </select>
     <div class="budget-wrap" style="align-items:center;gap:6px;">
       <label>営業時間</label>
       <select id="close-filter-select" onchange="onSelectChange(this)" style="font-size:13px;padding:7px 10px;border:1px solid #ddd;border-radius:8px;background:#fff;color:#1a1a1a;cursor:pointer;">
@@ -378,20 +385,53 @@
       if (closeFilter && !isOpenUntil(s.close_time, closeFilter)) return false;
       return true;
     });
-    // ランダムシャッフル
-    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
-    // 写真ありを先頭2件に
-    const withPhoto = shuffled.filter(s => {
-      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
-      return primary?.image_url || s.image_url;
-    });
-    const withoutPhoto = shuffled.filter(s => {
-      const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
-      return !primary?.image_url && !s.image_url;
-    });
-    const top2 = withPhoto.slice(0, 2);
-    const rest = [...withPhoto.slice(2), ...withoutPhoto].sort(() => Math.random() - 0.5);
-    const sorted = [...top2, ...rest];
+    const sortOrder = document.getElementById('sort-order').value;
+
+    // 閉店時間を分に変換（深夜帯は+24時間）
+    const toMinAdj = t => {
+      if (!t) return null;
+      const [h, m] = t.split(':').map(Number);
+      const mins = h * 60 + m;
+      return mins < 360 ? mins + 1440 : mins; // 0:00〜5:59は翌日扱い
+    };
+
+    let sorted;
+    if (sortOrder === 'random') {
+      const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+      const withPhoto = shuffled.filter(s => {
+        const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
+        return primary?.image_url || s.image_url;
+      });
+      const withoutPhoto = shuffled.filter(s => {
+        const primary = s.shopImages.find(i => i.is_primary) || s.shopImages[0];
+        return !primary?.image_url && !s.image_url;
+      });
+      const top2 = withPhoto.slice(0, 2);
+      const rest = [...withPhoto.slice(2), ...withoutPhoto].sort(() => Math.random() - 0.5);
+      sorted = [...top2, ...rest];
+    } else if (sortOrder === 'price_asc') {
+      sorted = [...filtered].sort((a, b) => a.price - b.price);
+    } else if (sortOrder === 'price_desc') {
+      sorted = [...filtered].sort((a, b) => b.price - a.price);
+    } else if (sortOrder === 'close_late') {
+      sorted = [...filtered].sort((a, b) => {
+        const am = toMinAdj(a.close_time);
+        const bm = toMinAdj(b.close_time);
+        if (am === null && bm === null) return 0;
+        if (am === null) return 1;
+        if (bm === null) return -1;
+        return bm - am;
+      });
+    } else if (sortOrder === 'close_early') {
+      sorted = [...filtered].sort((a, b) => {
+        const am = toMinAdj(a.close_time);
+        const bm = toMinAdj(b.close_time);
+        if (am === null && bm === null) return 0;
+        if (am === null) return 1;
+        if (bm === null) return -1;
+        return am - bm;
+      });
+    }
 
     document.getElementById('results-count').innerHTML = `<strong>${sorted.length}件</strong>のお店が見つかりました`;
     const cardsEl = document.getElementById('cards');
