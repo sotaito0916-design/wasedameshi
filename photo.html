@@ -74,35 +74,26 @@
     <div class="notice">📷 投稿された写真は管理者が確認します。承認後に公開されます。</div>
 
     <div class="card" id="form-wrap">
-      <div class="type-tabs">
-        <button class="type-tab active" onclick="switchType('shop')" id="tab-shop">🏠 お店の写真</button>
-        <button class="type-tab" onclick="switchType('menu')" id="tab-menu">📋 メニュー表</button>
+      <div class="form-group">
+        <label>🏠 お店の写真（複数可・任意）</label>
+        <div class="img-upload">
+          <input type="file" id="f-shop-images" accept="image/*" multiple onchange="previewImages(this, 'shop-preview')">
+          <div class="img-upload-icon">🏠</div>
+          <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>して写真を追加<br>複数選択可・各5MB以下</div>
+        </div>
+        <div class="img-preview-list" id="shop-preview"></div>
+        <p class="hint">外観・内装・料理など、お店の雰囲気が伝わる写真をお願いします。</p>
       </div>
 
-      <div id="type-shop">
-        <div class="form-group">
-          <label>お店の写真（複数可）</label>
-          <div class="img-upload">
-            <input type="file" id="f-shop-images" accept="image/*" multiple onchange="previewImages(this, 'shop-preview')">
-            <div class="img-upload-icon">🏠</div>
-            <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>して写真を追加<br>複数選択可・各5MB以下</div>
-          </div>
-          <div class="img-preview-list" id="shop-preview"></div>
-          <p class="hint">外観・内装・料理など、お店の雰囲気が伝わる写真をお願いします。</p>
+      <div class="form-group">
+        <label>📋 メニュー表の写真（複数可・任意）</label>
+        <div class="img-upload">
+          <input type="file" id="f-menu-images" accept="image/*" multiple onchange="previewImages(this, 'menu-preview')">
+          <div class="img-upload-icon">📋</div>
+          <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>してメニュー表を追加<br>複数選択可・各5MB以下</div>
         </div>
-      </div>
-
-      <div id="type-menu" style="display:none;">
-        <div class="form-group">
-          <label>メニュー表の写真（複数可）</label>
-          <div class="img-upload">
-            <input type="file" id="f-menu-images" accept="image/*" multiple onchange="previewImages(this, 'menu-preview')">
-            <div class="img-upload-icon">📋</div>
-            <div class="img-upload-text"><strong>クリックまたはドラッグ</strong>してメニュー表を追加<br>複数選択可・各5MB以下</div>
-          </div>
-          <div class="img-preview-list" id="menu-preview"></div>
-          <p class="hint">メニュー全体が見えるように撮影してください。</p>
-        </div>
+        <div class="img-preview-list" id="menu-preview"></div>
+        <p class="hint">メニュー全体が見えるように撮影してください。</p>
       </div>
 
       <div class="copyright-notice">
@@ -136,7 +127,6 @@
   const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let currentShop = null;
-  let currentType = 'shop';
   let shopFiles = [], menuFiles = [];
 
   async function init() {
@@ -152,15 +142,7 @@
     document.getElementById('main-content').style.display = 'block';
   }
 
-  function switchType(type) {
-    currentType = type;
-    document.getElementById('type-shop').style.display = type === 'shop' ? 'block' : 'none';
-    document.getElementById('type-menu').style.display = type === 'menu' ? 'block' : 'none';
-    document.getElementById('tab-shop').classList.toggle('active', type === 'shop');
-    document.getElementById('tab-menu').classList.toggle('active', type === 'menu');
-  }
-
-  function previewImages(input, previewId) {
+function previewImages(input, previewId) {
     const files = Array.from(input.files);
     const targetArr = previewId === 'shop-preview' ? shopFiles : menuFiles;
     files.forEach(file => {
@@ -190,12 +172,11 @@
   }
 
   async function submitPhotos() {
-    const files = currentType === 'shop'
-      ? shopFiles.filter(f => f !== null)
-      : menuFiles.filter(f => f !== null);
+    const sFiles = shopFiles.filter(f => f !== null);
+    const mFiles = menuFiles.filter(f => f !== null);
 
-    if (!files.length) {
-      showError('写真を選択してください');
+    if (!sFiles.length && !mFiles.length) {
+      showError('お店の写真またはメニュー表の写真を選択してください');
       return;
     }
 
@@ -207,19 +188,32 @@
 
     const { data: { user } } = await client.auth.getUser();
     const comment = document.getElementById('f-comment').value.trim();
-    const uploadedUrls = [];
 
-    for (const file of files) {
+    // お店の写真をアップロード
+    const shopUrls = [];
+    for (const file of sFiles) {
       const ext = file.name.split('.').pop();
-      const fileName = `${currentType}_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const fileName = `shop_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: uploadErr } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (!uploadErr) {
         const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
-        uploadedUrls.push(urlData.publicUrl);
+        shopUrls.push(urlData.publicUrl);
       }
     }
 
-    if (!uploadedUrls.length) {
+    // メニュー表をアップロード
+    const menuUrls = [];
+    for (const file of mFiles) {
+      const ext = file.name.split('.').pop();
+      const fileName = `menu_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadErr } = await client.storage.from('shop-images').upload(fileName, file, { cacheControl: '3600', upsert: false });
+      if (!uploadErr) {
+        const { data: urlData } = client.storage.from('shop-images').getPublicUrl(fileName);
+        menuUrls.push(urlData.publicUrl);
+      }
+    }
+
+    if (!shopUrls.length && !menuUrls.length) {
       showError('アップロードに失敗しました。もう一度お試しください。');
       btn.disabled = false;
       btn.textContent = '投稿する';
@@ -227,14 +221,13 @@
       return;
     }
 
-    // shop_editsテーブルに写真提案として保存
+    const typeLabel = [shopUrls.length ? 'お店の写真' : '', menuUrls.length ? 'メニュー表' : ''].filter(Boolean).join('と');
     const proposed_data = {
-      new_images: currentType === 'shop' ? uploadedUrls : [],
-      menu_image_url: currentType === 'menu' ? uploadedUrls[0] : null,
-      menu_images: currentType === 'menu' ? uploadedUrls : [],
-      reason: comment || `${currentType === 'shop' ? 'お店' : 'メニュー表'}の写真を投稿しました`,
+      new_images: shopUrls,
+      menu_images: menuUrls,
+      menu_image_url: menuUrls[0] || null,
+      reason: comment || `${typeLabel}を投稿しました`,
       photo_only: true,
-      photo_type: currentType,
     };
 
     const { error } = await client.from('shop_edits').insert({
