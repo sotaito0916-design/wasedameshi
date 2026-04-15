@@ -36,6 +36,8 @@
     .filter-item { display: flex; align-items: center; gap: 6px; }
     .filter-item label { font-size: 12px; color: #666; white-space: nowrap; }
     .filter-item select { font-size: 13px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
+    .filter-item-sort { margin-left: auto; }
+    @media (max-width: 768px) { .filter-item-sort { margin-left: 0; } }
     main { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; }
     .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
     .results-count strong { color: #8f0000; }
@@ -162,16 +164,6 @@
       <span class="budget-label" id="budget-label">〜¥3,000</span>
     </div>
     <div class="filter-item">
-      <label>並び順</label>
-      <select id="sort-order" onchange="renderCards()">
-        <option value="random">ランダム</option>
-        <option value="price_asc">価格が安い順</option>
-        <option value="price_desc">価格が高い順</option>
-        <option value="close_late">閉店時間が遅い順</option>
-        <option value="close_early">閉店時間が早い順</option>
-      </select>
-    </div>
-    <div class="filter-item">
       <label>営業時間</label>
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <select id="close-filter-select" onchange="onSelectChange(this)">
@@ -188,6 +180,16 @@
           <span style="font-size:13px;color:#666;white-space:nowrap;">以降も営業</span>
         </span>
       </div>
+    </div>
+    <div class="filter-item filter-item-sort">
+      <label>並び順</label>
+      <select id="sort-order" onchange="renderCards()">
+        <option value="random">ランダム</option>
+        <option value="price_asc">価格が安い順</option>
+        <option value="price_desc">価格が高い順</option>
+        <option value="close_late">閉店時間が遅い順</option>
+        <option value="close_early">閉店時間が早い順</option>
+      </select>
     </div>
   </div>
 </div>
