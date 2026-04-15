@@ -36,8 +36,9 @@
     .filter-item { display: flex; align-items: center; gap: 6px; }
     .filter-item label { font-size: 12px; color: #666; white-space: nowrap; }
     .filter-item select { font-size: 13px; padding: 7px 10px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a; cursor: pointer; }
-    .filter-item-sort { margin-left: auto; }
-    @media (max-width: 768px) { .filter-item-sort { margin-left: 0; } }
+    .area-sort-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .area-sort-row .area-tabs { flex: 1; }
+    .area-sort-row .filter-item { align-self: flex-start; margin-top: -4px; }
     main { max-width: 800px; margin: 0 auto; padding: 1.5rem 1rem; }
     .results-count { font-size: 13px; color: #888; margin-bottom: 1rem; }
     .results-count strong { color: #8f0000; }
@@ -133,11 +134,23 @@
 </header>
 
 <div class="filters-wrap">
-  <div class="area-tabs">
-    <button class="area-tab active" data-area="">全エリア</button>
-    <button class="area-tab" data-area="早稲田キャンパス周辺">早稲田キャンパス周辺</button>
-    <button class="area-tab" data-area="高田馬場駅周辺">高田馬場駅周辺</button>
-    <button class="area-tab" data-area="西早稲田周辺">西早稲田周辺</button>
+  <div class="area-sort-row">
+    <div class="area-tabs">
+      <button class="area-tab active" data-area="">全エリア</button>
+      <button class="area-tab" data-area="早稲田キャンパス周辺">早稲田キャンパス周辺</button>
+      <button class="area-tab" data-area="高田馬場駅周辺">高田馬場駅周辺</button>
+      <button class="area-tab" data-area="西早稲田周辺">西早稲田周辺</button>
+    </div>
+    <div class="filter-item" style="margin-left:auto;flex-shrink:0;">
+      <label>並び順</label>
+      <select id="sort-order" onchange="renderCards()">
+        <option value="random">ランダム</option>
+        <option value="price_asc">価格が安い順</option>
+        <option value="price_desc">価格が高い順</option>
+        <option value="close_late">閉店時間が遅い順</option>
+        <option value="close_early">閉店時間が早い順</option>
+      </select>
+    </div>
   </div>
   <div class="filter-row">
     <select id="genre">
@@ -181,16 +194,7 @@
         </span>
       </div>
     </div>
-    <div class="filter-item filter-item-sort">
-      <label>並び順</label>
-      <select id="sort-order" onchange="renderCards()">
-        <option value="random">ランダム</option>
-        <option value="price_asc">価格が安い順</option>
-        <option value="price_desc">価格が高い順</option>
-        <option value="close_late">閉店時間が遅い順</option>
-        <option value="close_early">閉店時間が早い順</option>
-      </select>
-    </div>
+
   </div>
 </div>
 
